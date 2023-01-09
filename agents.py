@@ -1,15 +1,20 @@
 import functools
 
+import numpy as np
 import optax
 
-import boltzmann
-import discounted_ucb
-import doya_dayu
+import dd_mabs.doya_dayu
+import dd_mabs.td_doya_dayu
 import doya_dayu_tab
-import epsilon_greedy
-import thompson_ensemble
-import thompson_gaussian
-import ucb
+import ducb
+import mabs.boltzmann
+import mabs.discounted_ucb
+import mabs.doya_dayu
+import mabs.epsilon_greedy
+import mabs.thompson_gaussian
+import td_mabs.boltzmann
+import td_mabs.discounted_ucb
+import td_mabs.epsilon_greedy
 
 
 class Agents:
@@ -21,94 +26,338 @@ class Agents:
         self._agents = self._setup_agents()
 
     def _setup_agents(self):
+        # agents = {}
+        # for i in [5, 10, 20, 100]:
+        #     for j in np.linspace(0, 1, 11):
+        #         for k in [0.5, 1, 1.5, 2]:
+        #             agents[f"dd_{i}_{j}_{k}"] = (
+        #                 f"DD {i} {j} {k}",
+        #                 functools.partial(
+        #                     doya_dayu_tab.DoyaDaYuTabular,
+        #                     self._num_actions,
+        #                     i,
+        #                     adapt_lrate=True,
+        #                     adapt_temperature=True,
+        #                     rng=self._rng,
+        #                     mask_p=j,
+        #                     Q0=0.5,
+        #                     S0=0.01,
+        #                     lrate_per_arm=True,
+        #                     lr_noise_multiplier=k,
+        #                 ),
+        #             )
+
+        # agents["ducb"] = (
+        #     "Discounted UCB 99",
+        #     functools.partial(
+        #         mabs.discounted_ucb.DiscountedUCB,
+        #         n_arms=self._num_actions,
+        #         rho=1.0,
+        #         gamma=0.99,
+        #         rng=self._rng,
+        #     ),
+        # )
+
+        # return agents
+
         return dict(
             # egreedy=(
             #     "Epsilon Greedy",
             #     functools.partial(
-            #         epsilon_greedy.EpsilonGreedy,
-            #         self._num_actions,
-            #         0.05,
-            #         optax.sgd(self._learning_rate),
+            #         mabs.epsilon_greedy.EpsilonGreedy,
+            #         n_arms=self._num_actions,
+            #         epsilon=0.05,
+            #         rng=self._rng,
+            #     ),
+            # ),
+            # td_egreedy=(
+            #     "TD Epsilon Greedy",
+            #     functools.partial(
+            #         td_mabs.epsilon_greedy.EpsilonGreedy,
+            #         n_arms=self._num_actions,
+            #         epsilon=0.05,
+            #         learning_rate=self._learning_rate,
             #         rng=self._rng,
             #     ),
             # ),
             # boltzmann=(
             #     "Boltzmann",
             #     functools.partial(
-            #         boltzmann.Boltzmann,
-            #         self._num_actions,
-            #         0.25,
-            #         optax.sgd(self._learning_rate),
+            #         mabs.boltzmann.Boltzmann,
+            #         n_arms=self._num_actions,
+            #         temperature=0.15,
             #         rng=self._rng,
             #     ),
             # ),
-            # ucb=(
-            #     "UCB",
-            #     functools.partial(
-            #         ucb.UCB,
-            #         self._num_actions,
-            #         1.0,
-            #         optax.sgd(self._learning_rate),
-            #         rng=self._rng,
-            #     ),
-            # ),
-            ducb=(
-                "Discounted UCB",
+            td_boltzmann=(
+                "TD Boltzmann",
                 functools.partial(
-                    discounted_ucb.DiscountedUCB,
-                    self._num_actions,
-                    1.0,
-                    0.99,
+                    td_mabs.boltzmann.Boltzmann,
+                    n_arms=self._num_actions,
+                    temperature=0.25,
+                    learning_rate=0.1,
                     rng=self._rng,
                 ),
             ),
-            # dd=(
-            #     "DoyaDaYu",
+            # ucb=(
+            #     "UCB",
             #     functools.partial(
-            #         doya_dayu.DoyaDaYu,
-            #         self._num_actions,
-            #         30,
-            #         optax.sgd(1.0),
-            #         use_direct=True,
-            #         adapt_lrate=True,
-            #         adapt_temperature=True,
-            #         Q0=0.1,
-            #         S0=0.001,
+            #         mabs.discounted_ucb.DiscountedUCB,
+            #         n_arms=self._num_actions,
+            #         rho=1.0,
+            #         gamma=1,
+            #         rng=self._rng,
+            #     ),
+            # ),
+            # thompson=(
+            #     "Thompson",
+            #     functools.partial(
+            #         mabs.thompson_gaussian.ThompsonSamplingGaussian,
+            #         n_arms=self._num_actions,
+            #         rng=self._rng,
+            #     ),
+            # ),
+            # td_ucb=(
+            #     "TD UCB",
+            #     functools.partial(
+            #         td_mabs.discounted_ucb.DiscountedUCB,
+            #         n_arms=self._num_actions,
+            #         rho=1.0,
+            #         gamma=1.0,
+            #         learning_rate=self._learning_rate,
+            #         rng=self._rng,
+            #     ),
+            # ),
+            # ducb2=(
+            #     "Discounted UCB 999",
+            #     functools.partial(
+            #         mabs.discounted_ucb.DiscountedUCB,
+            #         n_arms=self._num_actions,
+            #         rho=1.0,
+            #         gamma=0.999,
+            #         rng=self._rng,
+            #     ),
+            # ),
+            # ducb3=(
+            #     "Discounted UCB 9999",
+            #     functools.partial(
+            #         mabs.discounted_ucb.DiscountedUCB,
+            #         n_arms=self._num_actions,
+            #         rho=1.0,
+            #         gamma=0.9999,
             #         rng=self._rng,
             #     ),
             # ),
             ddtab=(
-                # "DoyaDaYu (Tab)",
-                "DoyaDaYu",
+                "DoyaDaYu 1.5",
                 functools.partial(
-                    doya_dayu_tab.DoyaDaYuTabular,
+                    dd_mabs.doya_dayu.DoyaDaYu,
                     self._num_actions,
-                    30,
-                    adapt_lrate=True,
+                    40,
+                    learning_rate=None,
+                    adapt_temperature=True,
+                    rng=self._rng,
+                    mask_p=1.0,
+                    Q0=0.5,
+                    S0=0.01,
+                    lrate_per_arm=True,
+                    lr_noise_multiplier=1.5,
+                    use_direct=False,
+                    aleatoric="variance",
+                ),
+            ),
+            # td_ducb=(
+            #     "TD Discounted UCB 0.1 0.99",
+            #     functools.partial(
+            #         td_mabs.discounted_ucb.DiscountedUCB,
+            #         n_arms=self._num_actions,
+            #         rho=1.0,
+            #         gamma=0.99,
+            #         learning_rate=0.1,
+            #         rng=self._rng,
+            #     ),
+            # ),
+            # td_ducb2=(
+            #     "TD Discounted UCB 0.1 0.999",
+            #     functools.partial(
+            #         td_mabs.discounted_ucb.DiscountedUCB,
+            #         n_arms=self._num_actions,
+            #         rho=1.0,
+            #         gamma=0.999,
+            #         learning_rate=0.1,
+            #         rng=self._rng,
+            #     ),
+            # ),
+            # td_ducb3=(
+            #     "TD Discounted UCB 0.1 0.9999",
+            #     functools.partial(
+            #         td_mabs.discounted_ucb.DiscountedUCB,
+            #         n_arms=self._num_actions,
+            #         rho=1.0,
+            #         gamma=0.9999,
+            #         learning_rate=0.1,
+            #         rng=self._rng,
+            #     ),
+            # ),
+            # td_ducb4=(
+            #     "TD Discounted UCB 0.2 0.99",
+            #     functools.partial(
+            #         td_mabs.discounted_ucb.DiscountedUCB,
+            #         n_arms=self._num_actions,
+            #         rho=1.0,
+            #         gamma=0.99,
+            #         learning_rate=0.2,
+            #         rng=self._rng,
+            #     ),
+            # ),
+            td_ducb5=(
+                "TD Discounted UCB 0.2 0.999",
+                functools.partial(
+                    td_mabs.discounted_ucb.DiscountedUCB,
+                    n_arms=self._num_actions,
+                    rho=1.0,
+                    gamma=0.999,
+                    learning_rate=0.2,
+                    rng=self._rng,
+                ),
+            ),
+            # td_ducb6=(
+            #     "TD Discounted UCB 0.2 0.9999",
+            #     functools.partial(
+            #         td_mabs.discounted_ucb.DiscountedUCB,
+            #         n_arms=self._num_actions,
+            #         rho=1.0,
+            #         gamma=0.9999,
+            #         learning_rate=0.2,
+            #         rng=self._rng,
+            #     ),
+            # ),
+            # td_ducb7=(
+            #     "TD Discounted UCB 0.5 0.99",
+            #     functools.partial(
+            #         td_mabs.discounted_ucb.DiscountedUCB,
+            #         n_arms=self._num_actions,
+            #         rho=1.0,
+            #         gamma=0.99,
+            #         learning_rate=0.5,
+            #         rng=self._rng,
+            #     ),
+            # ),
+            # td_ducb8=(
+            #     "TD Discounted UCB 0.5 0.999",
+            #     functools.partial(
+            #         td_mabs.discounted_ucb.DiscountedUCB,
+            #         n_arms=self._num_actions,
+            #         rho=1.0,
+            #         gamma=0.999,
+            #         learning_rate=0.5,
+            #         rng=self._rng,
+            #     ),
+            # ),
+            # td_ducb9=(
+            #     "TD Discounted UCB 0.5 0.9999",
+            #     functools.partial(
+            #         td_mabs.discounted_ucb.DiscountedUCB,
+            #         n_arms=self._num_actions,
+            #         rho=1.0,
+            #         gamma=0.9999,
+            #         learning_rate=0.5,
+            #         rng=self._rng,
+            #     ),
+            # ),
+            # td_ducb10=(
+            #     "TD Discounted UCB 0.5 0.9",
+            #     functools.partial(
+            #         td_mabs.discounted_ucb.DiscountedUCB,
+            #         n_arms=self._num_actions,
+            #         rho=1.0,
+            #         gamma=0.9,
+            #         learning_rate=0.5,
+            #         rng=self._rng,
+            #     ),
+            # ),
+            td_ucb=(
+                "TD UCB 0.1",
+                functools.partial(
+                    td_mabs.discounted_ucb.DiscountedUCB,
+                    n_arms=self._num_actions,
+                    rho=1.0,
+                    gamma=1,
+                    learning_rate=0.1,
+                    rng=self._rng,
+                ),
+            ),
+            tddd=(
+                "TD DoyaDaYu 1.25",
+                functools.partial(
+                    dd_mabs.td_doya_dayu.DoyaDaYu,
+                    self._num_actions,
+                    20,
+                    learning_rate=None,
                     adapt_temperature=True,
                     rng=self._rng,
                     mask_p=0.5,
                     Q0=0.5,
                     S0=0.01,
                     lrate_per_arm=True,
+                    lr_noise_multiplier=1,
+                    use_direct=False,
+                    aleatoric="variance",
                 ),
             ),
-            ddtab2=(
-                # "DoyaDaYu (Tab)",
-                "DoyaDaYu2",
-                functools.partial(
-                    doya_dayu_tab.DoyaDaYuTabular,
-                    self._num_actions,
-                    30,
-                    adapt_lrate=True,
-                    adapt_temperature=True,
-                    rng=self._rng,
-                    mask_p=1,
-                    Q0=0.5,
-                    S0=0.01,
-                    lrate_per_arm=True,
-                ),
-            ),
+            # ddtab3=(
+            #     "DoyaDaYu",
+            #     functools.partial(
+            #         dd_mabs.doya_dayu.DoyaDaYu,
+            #         self._num_actions,
+            #         20,
+            #         learning_rate=None,
+            #         adapt_temperature=True,
+            #         rng=self._rng,
+            #         mask_p=1,
+            #         Q0=0.5,
+            #         S0=0.01,
+            #         lrate_per_arm=True,
+            #         lr_noise_multiplier=1.25,
+            #         use_direct=False,
+            #         aleatoric="variance",
+            #     ),
+            # ),
+            # ddtab4=(
+            #     "DoyaDaYu 1",
+            #     functools.partial(
+            #         dd_mabs.doya_dayu.DoyaDaYu,
+            #         self._num_actions,
+            #         20,
+            #         learning_rate=None,
+            #         adapt_temperature=True,
+            #         rng=self._rng,
+            #         mask_p=1,
+            #         Q0=0.5,
+            #         S0=0.01,
+            #         lrate_per_arm=True,
+            #         lr_noise_multiplier=2,
+            #         use_direct=False,
+            #         aleatoric="variance",
+            #     ),
+            # ),
+            # ddtab4=(
+            #     # "DoyaDaYu (Tab)",
+            #     "DoyaDaYu 2.5",
+            #     functools.partial(
+            #         doya_dayu_tab.DoyaDaYuTabular,
+            #         self._num_actions,
+            #         30,
+            #         adapt_lrate=True,
+            #         adapt_temperature=True,
+            #         rng=self._rng,
+            #         mask_p=0.5,
+            #         Q0=0.5,
+            #         S0=0.01,
+            #         lrate_per_arm=True,
+            #         lr_noise_multiplier=2.5,
+            #     ),
+            # ),
         )
 
     @property

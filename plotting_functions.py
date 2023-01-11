@@ -129,7 +129,30 @@ def variance_mses(agents, agent_order, mses, save_path):
 def scalar_plot(agents, agent_order, scalar_data, save_path, label, logscale):
     fig = plt.figure()
     for i, name in enumerate(agent_order):
-        plt.plot(scalar_data[i].mean(0).ravel(), label=agents[name][0])
+        means = scalar_data[i].mean(0).ravel()
+
+        non_inf_indices = np.where(means < np.inf)
+        if len(non_inf_indices[0]):
+            non_inf_index = non_inf_indices[0][0] + 1
+        else:
+            non_inf_index = len(means)
+
+        means = means[non_inf_index:]
+        stds = scalar_data[i].std(0).ravel()[non_inf_index:]
+        # means = regret[i].mean(0).ravel().cumsum(-1)
+        # stds = regret[i].std(0).ravel()
+        plt.plot(
+            np.arange(non_inf_index, len(means) + non_inf_index),
+            means,
+            lw=2,
+            label=agents[name][0],
+        )
+        plt.fill_between(
+            np.arange(non_inf_index, len(means) + non_inf_index),
+            means - stds,
+            means + stds,
+            alpha=0.25,
+        )
     if logscale:
         plt.yscale("log")
     plt.xlabel("Steps")

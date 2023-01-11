@@ -286,15 +286,37 @@ class DoyaDaYu:
 
         return self._learning_rate
 
-    def temperature(self):
-        # temperature = np.mean(self.get_epistemic())
+    def temperature(self, memory=None):
+
+        memory = memory or self._temperature_memory
+
+        def _likelihood_shift(likelihood_deque):
+            list_l = list(likelihood_deque)
+
+            past = np.mean(list_l[memory : 2 * memory])
+            pres = np.mean(list_l[:memory])
+            if np.isnan(pres) or np.isnan(past):
+                import pdb
+
+                pdb.set_trace()
+            return past / pres + pres / past - 2
+
+        likelihood_shifts = [
+            _likelihood_shift(self._per_arm_likelihood_memory[arm])
+            for arm in range(self._n_arms)
+        ]
+
+        print("ls", likelihood_shifts)
         logits = np.exp(self.predict_bandits()[0])
         logits /= logits.sum()
+        # return np.max(likelihood_shifts)
+        return np.average(likelihood_shifts, weights=logits)
         temperature = np.average(self.get_epistemic(), weights=logits)
         # temperature = 0.5 * np.sqrt(temperature)
         if temperature < self._min_epistemic_uncertainty:
             # print(self._min_epistemic_uncertainty)
             self._min_epistemic_uncertainty = temperature - self.BASELINE
+
         return temperature
 
     def policy(self):

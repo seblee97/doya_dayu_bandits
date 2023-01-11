@@ -321,13 +321,13 @@ class DoyaDaYu:
 
     def policy(self):
         if self._adapt_temperature:
-            temperature = self.temperature() - self._min_epistemic_uncertainty
-            logits = self.predict_bandits()[0]
-            # import pdb
+            temperature = self.temperature()  # - self._min_epistemic_uncertainty
+            # logits = self.predict_bandits()[0]
+            # logits -= logits.max()
 
-            # pdb.set_trace()
-            logits -= logits.max()
-            # logits = self.qvals[..., 0].mean(-1) - self.qvals[..., 0].mean(-1).max()
+            logits = np.exp(self.predict_bandits()[0])
+            logits /= logits.sum()
+            # logits = self._qvals[..., 0].mean(-1) - self._qvals[..., 0].mean(-1).max()
             return rlax.softmax(temperature).probs(logits)
 
         # Otherwise, acting with thompson sampling
@@ -337,7 +337,7 @@ class DoyaDaYu:
 
     def play(self):
         if not self._arm_seen.all():
-            return self._arm_seen.argmin()
+            return jax.device_get(self._arm_seen.argmin())
 
         pi = self.policy()
 
@@ -366,6 +366,7 @@ class DoyaDaYu:
         self._arm_seen[arm] = True
         self._step += 1
         self._step_arm[arm] += 1
+        self._total_steps += 1
         rng_key, self._rng_key = jax.random.split(self._rng_key, 2)
 
         if self._learning_rate is None:

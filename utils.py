@@ -36,3 +36,12 @@ def compute_pairwise_kl(means, stds):
     max_kls = np.max(kls)
 
     return mean_kls, max_kls
+
+
+def gaussian_likelihood(mean, std, x):
+    lik = np.exp(-0.5 * ((x - mean) / std) ** 2) / (std * np.sqrt(2 * np.pi))
+    if np.isnan(lik):
+        import pdb
+
+        pdb.set_trace()
+    return lik

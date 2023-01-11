@@ -222,7 +222,7 @@ class DoyaDaYu:
 
         var = jnp.clip(
             self._qvals[..., 1] - self._qvals[..., 0].mean(axis=1, keepdims=True) ** 2,
-            0.0,
+            self.BASELINE,
             100.0,
         ).mean(axis=1)
 

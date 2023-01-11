@@ -52,10 +52,10 @@ class Boltzmann(td_mab.TDMAB):
         return self._qvals, np.ones(self._n_arms)
 
     def policy(self):
-        return np.eye(self._n_arms)[self.play()]
-        # return jax.device_get(
-        #     rlax.softmax(self._temperature).probs(self._qvals - self._qvals.max())
-        # )
+        # return np.eye(self._n_arms)[self.play()]
+        return jax.device_get(
+            rlax.softmax(self._temperature).probs(self._qvals - self._qvals.max())
+        )
 
     def learning_rate(self, action: int):
         return self._learning_rate

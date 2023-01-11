@@ -252,7 +252,31 @@ class DoyaDaYu:
 
     def learning_rate(self, arm):
         if self._learning_rate is None:
-            lrate = self.get_epistemic() / (self.get_epistemic() + self.get_aleatoric())
+            # lrate = self.get_epistemic() / (self.get_epistemic() + self.get_aleatoric())
+            # lrate = np.clip(
+            #     self.get_epistemic() / self.get_aleatoric()
+            #     + self.get_aleatoric() / self.get_epistemic(),
+            #     self.BASELINE,
+            #     1,
+            # )
+            # lrate = np.clip(
+            #     self.get_epistemic() / self.get_aleatoric()
+            #     + self.get_aleatoric() / self.get_epistemic(),
+            #     self.BASELINE,
+            #     1,
+            # )
+            temperature = self.temperature(memory=self._lr_memory)
+
+            # lrate = np.clip(
+            lrate = 0.1 * (temperature / (self.get_aleatoric() + temperature))
+            #     self.BASELINE,
+            #     0.1,
+            # )
+
+            if any(np.isnan(lrate)):
+                lrate = 0.1 * np.ones(self._n_arms)
+
+            print("Learning RATE", lrate)
             if self._lrate_per_arm:
                 # import pdb
 

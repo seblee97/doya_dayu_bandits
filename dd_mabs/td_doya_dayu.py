@@ -1,3 +1,4 @@
+import collections
 from typing import Union
 
 import jax
@@ -5,6 +6,8 @@ import jax.numpy as jnp
 import numpy as np
 import optax
 import rlax
+
+import utils
 
 
 class DoyaDaYu:
@@ -68,6 +71,20 @@ class DoyaDaYu:
         self._total_steps = 0
         self._step = np.zeros(self._n_ens)
         self._step_arm = np.zeros((self._n_arms, self._n_ens))
+
+        self._temperature_memory = 10
+        self._lr_memory = 20
+        self._likelihood_memory = collections.deque(
+            self._temperature_memory * [self.BASELINE], self._temperature_memory
+        )
+        self._per_arm_likelihood_memory = {
+            arm: collections.deque(
+                int(2 * np.max([self._lr_memory, self._temperature_memory]))
+                * [self.BASELINE],
+                int(2 * np.max([self._lr_memory, self._temperature_memory])),
+            )
+            for arm in range(self._n_arms)
+        }
 
         # If we do not adapt learning rate, then we will just use the optimizer given
         # If we do not adapt temperature, then we will just do thompson sampling

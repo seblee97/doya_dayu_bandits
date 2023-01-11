@@ -375,4 +375,24 @@ class DoyaDaYu:
         self._qvals, self._opt_state = self._update(
             self._qvals, arm, reward, self._opt_state, rng_key
         )
-        self._total_steps += 1
+
+        if self._use_direct:
+            likelihood = np.mean(
+                [
+                    utils.gaussian_likelihood(mean, np.sqrt(np.exp(logvar)), reward)
+                    for (mean, logvar) in self._qvals[arm]
+                ]
+            )
+        else:
+            likelihood = np.mean(
+                [
+                    utils.gaussian_likelihood(
+                        mean,
+                        np.sqrt(np.clip(sqr_rew - mean**2, self.BASELINE, 100.0)),
+                        reward,
+                    )
+                    for (mean, sqr_rew) in self._qvals[arm]
+                ]
+            )
+        self._likelihood_memory.appendleft(likelihood)
+        self._per_arm_likelihood_memory[arm.item()].appendleft(likelihood)

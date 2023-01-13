@@ -45,15 +45,21 @@ parser.add_argument(
     default=0.01,
     help="learning rate.",
 )
+parser.add_argument("--mean_lower", default=-3, help="lower bound of sample for means")
+parser.add_argument("--mean_upper", default=3, help="upper bound of sample for means")
+parser.add_argument(
+    "--scale_lower", default=1e-3, help="lower bound of sample for scale"
+)
+parser.add_argument("--scale_upper", default=1, help="upper bound of sample for scale")
 parser.add_argument("--bernoulli", action="store_true", default=False)
 
 
-def _sample_mean():
-    return rng.uniform(-3, 3)
+def _sample_mean(lower, upper):
+    return rng.uniform(lower, upper)
 
 
-def _sample_scale():
-    return rng.uniform(1e-3, 2)
+def _sample_scale(lower, upper):
+    return rng.uniform(lower, upper)
 
 
 def _sample_probability():
@@ -88,6 +94,9 @@ if __name__ == "__main__":
     with open(os.path.join(exp_path, "agents.json"), "+w") as json_file:
         json.dump(experiment_agents_spec, json_file)
 
+    with open(os.path.join(exp_path, "args.json"), "+w") as json_file:
+        json.dump(vars(args), json_file)
+
     scalar_data_shape = (
         len(experiment_agents),
         args.num_seeds,
@@ -120,7 +129,13 @@ if __name__ == "__main__":
                 )
             else:
                 dist_hist[seed, episode] = np.array(
-                    [(_sample_mean(), _sample_scale()) for _ in range(args.num_actions)]
+                    [
+                        (
+                            _sample_mean(args.mean_lower, args.mean_upper),
+                            _sample_scale(args.scale_lower, args.scale_upper),
+                        )
+                        for _ in range(args.num_actions)
+                    ]
                 )
 
     for seed in range(args.num_seeds):

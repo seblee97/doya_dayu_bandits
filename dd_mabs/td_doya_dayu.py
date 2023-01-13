@@ -197,7 +197,7 @@ class DoyaDaYu:
                 lr_noise = (
                     self._lr_noise_multiplier
                     * np.linspace(0.0, 1.0, self._n_ens)[
-                        np.random.permutation(self._n_ens)
+                        np.asarray(jax.random.permutation(self._rng_key, self._n_ens))
                     ]
                 )
                 d_loss_d_params = d_loss_d_params.at[arm].set(
@@ -345,7 +345,7 @@ class DoyaDaYu:
 
         # pdb.set_trace()
 
-        return jax.device_get(np.where(np.random.random() <= pi.cumsum())[0][0])
+        return jax.device_get(np.where(self._rng.random() <= pi.cumsum())[0][0])
 
         # if self._adapt_temperature:
         #     # Alternative:

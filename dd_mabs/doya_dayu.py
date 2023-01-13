@@ -183,7 +183,7 @@ class DoyaDaYu:
         #         )
         # action = ((self._rewards[:, 0] / self._step_arm[:, 0]) + ucb_values).argmax()
         # return action
-        return np.where(np.random.random() <= pi.cumsum())[0][0]
+        return np.where(self._rng.random() <= pi.cumsum())[0][0]
 
     def update(self, arm, reward):
         self._arm_seen[arm] = True

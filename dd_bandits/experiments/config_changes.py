@@ -14,8 +14,8 @@ for lr in []:
                     "agent": "td_doya_dayu",
                     "n_ens": 10,
                     "adaptation_modules": {
-                        "constant": {"type": "constant", "value": lr},
-                        "constant_t": {"type": "constants", "value": t},
+                        "constant": [{"type": "constant"}, {"value": lr}],
+                        "constant_t": [{"type": "constant"}, {"value": t}],
                     },
                     "learning_rate": "constant",
                     "temperature": "constant_t",
@@ -32,7 +32,7 @@ for lr in []:
 dd_agents = []
 for ens in [5, 10, 20]:
     for m in [0.1, 0.5, 1, 2]:
-        for lr in [0.1, 0.25, 1]:
+        for lr in [0.1, 0.25, 1.0]:
             for q_init in [0.01, 0.0, 0.1]:
                 for s_init in [0.01, 0.1]:
                     for mask in [1.0, 0.25, 0.5, 0.75]:
@@ -43,17 +43,21 @@ for ens in [5, 10, 20]:
                                     "agent": "td_doya_dayu",
                                     "n_ens": ens,
                                     "adaptation_modules": {
-                                        "reliability_index": {
-                                            "type": "reliability_index",
-                                            "learning_rate": lr,
-                                            "num_arms": NUM_ARMS,
-                                        },
-                                        "reliability_index_frac": {
-                                            "type": "reliability_index",
-                                            "multiple": m,
-                                            "learning_rate": lr,
-                                            "num_arms": NUM_ARMS,
-                                        },
+                                        "constant": [
+                                            {"type": "constant"},
+                                            {"value": 0.1},
+                                        ],
+                                        "reliability_index": [
+                                            {"type": "reliability_index"},
+                                            {"learning_rate": lr},
+                                            {"num_arms": NUM_ARMS},
+                                        ],
+                                        "reliability_index_frac": [
+                                            {"type": "reliability_index"},
+                                            {"multiple": m},
+                                            {"learning_rate": lr},
+                                            {"num_arms": NUM_ARMS},
+                                        ],
                                     },
                                     "learning_rate": {
                                         "learning_rate_operation": "ratio",

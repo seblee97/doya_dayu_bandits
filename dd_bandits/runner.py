@@ -25,6 +25,8 @@ class Runner(base_runner.BaseRunner):
         self._change_frequency = config.change_frequency
         self._bernoulli = config.bernoulli
 
+        super().__init__(config=config, unique_id=unique_id)
+
         self._agents = self._setup_agents(config=config)
         self._agent_order = sorted(self._agents)
 
@@ -43,8 +45,6 @@ class Runner(base_runner.BaseRunner):
         ) = self._setup_data_log(config=config)
 
         self._dists, self._best_arms = self._setup_bandit(config=config)
-
-        super().__init__(config=config, unique_id=unique_id)
 
         self._array_path = os.path.join(self._checkpoint_path, constants.ARRAYS)
         self._plot_path = os.path.join(self._checkpoint_path, constants.PLOTS)
@@ -109,9 +109,17 @@ class Runner(base_runner.BaseRunner):
         return []
 
     def _setup_agents(self, config):
+
+        agent_specs = np.load(
+            os.path.join(self._checkpoint_path, "agents.npy"), allow_pickle=True
+        )[()]
+        import pdb
+
+        pdb.set_trace()
+
         agents = {}
 
-        for agent_spec in config.agents:
+        for agent_spec in agent_specs:
             agent_type = agent_spec.pop(constants.AGENT)
             agent_name = agent_spec.pop(constants.NAME)
             if agent_type == constants.TD_DOYA_DAYU:

@@ -1,6 +1,7 @@
 import argparse
 import os
 
+import numpy as np
 from run_modes import cluster_run, parallel_run, serial_run, single_run, utils
 
 from dd_bandits import constants, runner
@@ -61,6 +62,10 @@ if __name__ == "__main__":
             results_folder=results_folder,
             config_path=args.config_path,
         )
+
+        from config_changes import agents
+
+        np.save(os.path.join(single_checkpoint_path, "agents"), agents)
 
         single_run.single_run(
             runner_class=runner_class,

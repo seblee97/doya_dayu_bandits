@@ -113,9 +113,6 @@ class Runner(base_runner.BaseRunner):
         agent_specs = np.load(
             os.path.join(self._checkpoint_path, "agents.npy"), allow_pickle=True
         )[()]
-        import pdb
-
-        pdb.set_trace()
 
         agents = {}
 

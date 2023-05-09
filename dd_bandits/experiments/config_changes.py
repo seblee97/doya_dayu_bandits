@@ -13,7 +13,10 @@ for lr in []:
                     "name": f"constant_{t}_{lr}",
                     "agent": "td_doya_dayu",
                     "n_ens": 10,
-                    "adaptation_modules": {"constant": lr, "constant_t": t},
+                    "adaptation_modules": {
+                        "constant": {"type": "constant", "value": lr},
+                        "constant_t": {"type": "constants", "value": t},
+                    },
                     "learning_rate": "constant",
                     "temperature": "constant_t",
                     "mask_p": 1.0,
@@ -31,7 +34,7 @@ for ens in [5, 10, 20]:
     for m in [0.1, 0.5, 1, 2]:
         for lr in [0.1, 0.25, 1]:
             for q_init in [0.01, 0.0, 0.1]:
-                for s_init in [0.01, 0.1, 1.0]:
+                for s_init in [0.01, 0.1]:
                     for mask in [1.0, 0.25, 0.5, 0.75]:
                         for ud in [True, False]:
                             dd_agents.append(
@@ -116,6 +119,6 @@ for r in [1.0]:
                     }
                 )
 
-agents = constant_agents + dd_agents + boltzmann_agents + ducb_agents
+agents = constant_agents  # + dd_agents + boltzmann_agents + ducb_agents
 
-CONFIG_CHANGES = {"agent_ablation": [{"agents": agents}]}
+# CONFIG_CHANGES = {"agent_ablation": [{"agents": agents}]}

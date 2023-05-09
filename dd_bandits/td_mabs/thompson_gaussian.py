@@ -7,23 +7,23 @@ from random_bandit import RandomMAB
 
 
 class ThompsonSamplingGaussian(RandomMAB):
-    def __init__(self, n_arms, optimizer, Q0=0.0, rng=None):
+    def __init__(self, num_arms, optimizer, Q0=0.0, rng=None):
 
         if rng is None:
             rng = np.random.RandomState()
 
         self.rng = rng
-        self._n_arms = n_arms
+        self._num_arms = num_arms
 
         if Q0 > 0.0:
-            Q0 = rng.normal(scale=Q0, size=n_arms)
+            Q0 = rng.normal(scale=Q0, size=num_arms)
 
-        self.qvals = np.ones(n_arms) * Q0
-        self.arm_seen = np.zeros(n_arms, dtype=bool)
+        self.qvals = np.ones(num_arms) * Q0
+        self.arm_seen = np.zeros(num_arms, dtype=bool)
 
         # Total and per-arm step count
         self.step = 0
-        self.step_arm = np.zeros(self._n_arms)
+        self.step_arm = np.zeros(self._num_arms)
 
         # Optimization setup
         self.qvals = jax.device_put(self.qvals)
@@ -52,9 +52,9 @@ class ThompsonSamplingGaussian(RandomMAB):
         samples = self.rng.normal(
             jax.device_get(self.qvals),
             np.sqrt(1.0 / (self.step_arm + 1.0)),
-            size=(100, self._n_arms),
+            size=(100, self._num_arms),
         )
-        return np.eye(self._n_arms)[samples.argmax(-1)].mean(0)
+        return np.eye(self._num_arms)[samples.argmax(-1)].mean(0)
 
     def play(self):
         if not self.arm_seen.all():

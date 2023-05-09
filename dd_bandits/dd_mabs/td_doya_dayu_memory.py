@@ -7,7 +7,7 @@ import numpy as np
 import optax
 import rlax
 
-import utils
+from dd_bandits import utils
 
 
 class DoyaDaYu:
@@ -20,30 +20,32 @@ class DoyaDaYu:
 
     def __init__(
         self,
-        n_arms: int,
+        num_arms: int,
         n_ens: int,
         mask_p: float,
-        Q0: float,
-        S0: float,
+        q_initialisation: float,
+        s_initialisation: float,
         learning_rate: Union[float, None],
         adapt_temperature: bool,
-        lrate_per_arm: bool,
+        lr_per_arm: bool,
         lr_noise_multiplier: Union[float, int],
         use_direct: bool,
         aleatoric: str,
+        temperature_memory: int,
+        lr_memory: int,
         rng=None,
     ):
         """Class Constructor
 
         Args:
-            n_arms: number of actions in the bandit
+            num_arms: number of actions in the bandit
             n_ens: size of the ensemble of learners
             mask_p: probability of updating each ensemble member at each step
-            Q0: initialisation scale for return mean estimates
-            S0: initialisation scale for return variance estimates
+            q_initialisation: initialisation scale for return mean estimates
+            s_initialisation: initialisation scale for return variance estimates
             learning_rate: None for adaptive learning rate, otherwise hard-coded value
             adapt_temperature: whether to adapt temperature or use Thompson
-            lrate_per_arm: whether to have a separate adaptive lr per arm (or average)
+            lr_per_arm: whether to have a separate adaptive lr per arm (or average)
             lr_noise_multiplier: size of randomisation for learning rates for each ensemble member
             use_direct: whether to use direct variance estimation or standard GD
             aleatoric: string specifying type of aleatoric uncertainty
@@ -57,23 +59,23 @@ class DoyaDaYu:
         self._rng = rng
         self._rng_key = jax.random.PRNGKey(self._rng.randint(1000000))
 
-        self._n_arms = n_arms
+        self._num_arms = num_arms
         self._n_ens = n_ens
         self._mask_p = mask_p
         self._lr_noise_multiplier = lr_noise_multiplier
         self._use_direct = use_direct
         self._aleatoric = aleatoric
 
-        self._q_initialisation = Q0
-        self._qv_initialisation = S0
+        self._q_initialisation = q_initialisation
+        self._qv_initialisation = s_initialisation
 
         # Total and per-arm step count
         self._total_steps = 0
         self._step = np.zeros(self._n_ens)
-        self._step_arm = np.zeros((self._n_arms, self._n_ens))
+        self._step_arm = np.zeros((self._num_arms, self._n_ens))
 
-        self._temperature_memory = 10
-        self._lr_memory = 20
+        self._temperature_memory = temperature_memory
+        self._lr_memory = lr_memory
         self._likelihood_memory = collections.deque(
             self._temperature_memory * [self.BASELINE], self._temperature_memory
         )
@@ -83,15 +85,15 @@ class DoyaDaYu:
                 * [self.BASELINE],
                 int(2 * np.max([self._lr_memory, self._temperature_memory])),
             )
-            for arm in range(self._n_arms)
+            for arm in range(self._num_arms)
         }
 
         # If we do not adapt learning rate, then we will just use the optimizer given
         # If we do not adapt temperature, then we will just do thompson sampling
         self._adapt_temperature = adapt_temperature
         self._learning_rate = learning_rate
-        self._lrate_per_arm = lrate_per_arm
-        self._arm_seen = np.zeros(self._n_arms, dtype=bool)
+        self._lr_per_arm = lr_per_arm
+        self._arm_seen = np.zeros(self._num_arms, dtype=bool)
 
         self._min_epistemic_uncertainty = np.inf
 
@@ -113,16 +115,16 @@ class DoyaDaYu:
     def _setup_values(self):
         if self._q_initialisation > 0.0:
             self._q_initialisation = self._rng.normal(
-                scale=self._q_initialisation, size=(self._n_arms, self._n_ens)
+                scale=self._q_initialisation, size=(self._num_arms, self._n_ens)
             )
         if self._qv_initialisation > 0.0:
             self._qv_initialisation = np.abs(
                 self._rng.normal(
-                    scale=self._qv_initialisation, size=(self._n_arms, self._n_ens)
+                    scale=self._qv_initialisation, size=(self._num_arms, self._n_ens)
                 )
             )
 
-        self._qvals = np.ones((self._n_arms, self._n_ens, 2))
+        self._qvals = np.ones((self._num_arms, self._n_ens, 2))
         self._qvals[..., 0] *= self._q_initialisation
         self._qvals[..., 1] *= self._qv_initialisation
         self._qvals = jax.device_put(self._qvals)
@@ -142,24 +144,24 @@ class DoyaDaYu:
         # # If we do not adapt temperature, then we will just do thompson sampling
         # self.adapt_lrate = adapt_lrate
         # self.adapt_temperature = adapt_temperature
-        # self.lrate_per_arm = lrate_per_arm
+        # self.lr_per_arm = lr_per_arm
 
-        # if Q0 > 0:
-        #     Q0 = rng.normal(scale=Q0, size=(n_arms, n_ens))
-        # if S0 > 0:
-        #     S0 = np.abs(rng.normal(scale=S0, size=(n_arms, n_ens)))
+        # if q_initialisation > 0:
+        #     q_initialisation = rng.normal(scale=q_initialisation, size=(num_arms, n_ens))
+        # if s_initialisation > 0:
+        #     s_initialisation = np.abs(rng.normal(scale=s_initialisation, size=(num_arms, n_ens)))
 
-        # self.qvals = np.ones((n_arms, n_ens, 2))
-        # self.qvals[..., 0] *= Q0
-        # self.qvals[..., 1] *= S0
+        # self.qvals = np.ones((num_arms, n_ens, 2))
+        # self.qvals[..., 0] *= q_initialisation
+        # self.qvals[..., 1] *= s_initialisation
         # # self.qvals[..., 1] = np.log(np.exp(np.abs(
-        # #     rng.normal(scale=S0, size=(n_arms, n_ens)))) - 1)
+        # #     rng.normal(scale=s_initialisation, size=(num_arms, n_ens)))) - 1)
 
-        # self.arm_seen = np.zeros(n_arms, dtype=bool)
+        # self.arm_seen = np.zeros(num_arms, dtype=bool)
 
         # # Total and per-arm step count
         # self.step = 0
-        # self.step_arm = np.zeros(self._n_arms)
+        # self.step_arm = np.zeros(self._num_arms)
 
         # # Optimization setup
         # self.qvals = jax.device_put(self.qvals)
@@ -252,6 +254,7 @@ class DoyaDaYu:
 
     def learning_rate(self, arm):
         if self._learning_rate is None:
+
             # lrate = self.get_epistemic() / (self.get_epistemic() + self.get_aleatoric())
             # lrate = np.clip(
             #     self.get_epistemic() / self.get_aleatoric()
@@ -274,10 +277,10 @@ class DoyaDaYu:
             # )
 
             if any(np.isnan(lrate)):
-                lrate = 0.1 * np.ones(self._n_arms)
+                lrate = 0.1 * np.ones(self._num_arms)
 
             print("Learning RATE", lrate)
-            if self._lrate_per_arm:
+            if self._lr_per_arm:
                 # import pdb
 
                 # pdb.set_trace()
@@ -303,7 +306,7 @@ class DoyaDaYu:
 
         likelihood_shifts = [
             _likelihood_shift(self._per_arm_likelihood_memory[arm])
-            for arm in range(self._n_arms)
+            for arm in range(self._num_arms)
         ]
 
         print("ls", likelihood_shifts)
@@ -331,19 +334,15 @@ class DoyaDaYu:
             return rlax.softmax(temperature).probs(logits)
 
         # Otherwise, acting with thompson sampling
-        return np.eye(self._n_arms)[jax.device_get(self._qvals[..., 0].argmax(0))].mean(
-            0
-        )
+        return np.eye(self._num_arms)[
+            jax.device_get(self._qvals[..., 0].argmax(0))
+        ].mean(0)
 
     def play(self):
         if not self._arm_seen.all():
             return jax.device_get(self._arm_seen.argmin())
 
         pi = self.policy()
-
-        # import pdb
-
-        # pdb.set_trace()
 
         return jax.device_get(np.where(self._rng.random() <= pi.cumsum())[0][0])
 
@@ -357,9 +356,9 @@ class DoyaDaYu:
         #         rlax.softmax(temperature).sample(rng_key, logits)
         #     ).ravel()[0]
 
-        # ind = self.rng.choice(self._n_ens, size=self._n_arms)
+        # ind = self.rng.choice(self._n_ens, size=self._num_arms)
         # return jax.device_get(
-        #     self._qvals[np.arange(self._n_arms), ind, 0].argmax()
+        #     self._qvals[np.arange(self._num_arms), ind, 0].argmax()
         # ).ravel()[0]
 
     def update(self, arm, reward):

@@ -14,7 +14,7 @@ class DoyaDaYu:
 
     def __init__(
         self,
-        n_arms: int,
+        num_arms: int,
         n_ens: int,
         mask_p: float,
         Q0: float,
@@ -30,7 +30,7 @@ class DoyaDaYu:
         """Class Constructor
 
         Args:
-            n_arms: number of actions in the bandit
+            num_arms: number of actions in the bandit
             n_ens: size of the ensemble of learners
             mask_p: probability of updating each ensemble member at each step
             Q0: initialisation scale for return mean estimates
@@ -51,7 +51,7 @@ class DoyaDaYu:
         self._rng = rng
         self._rng_key = jax.random.PRNGKey(self._rng.randint(1000000))
 
-        self._n_arms = n_arms
+        self._num_arms = num_arms
         self._n_ens = n_ens
         self._mask_p = mask_p
         self._lr_noise_multiplier = lr_noise_multiplier
@@ -63,21 +63,21 @@ class DoyaDaYu:
         self._adapt_temperature = adapt_temperature
         self._learning_rate = learning_rate
         self._lrate_per_arm = lrate_per_arm
-        self._arm_seen = np.zeros(self._n_arms, dtype=bool)
+        self._arm_seen = np.zeros(self._num_arms, dtype=bool)
 
         self._min_epistemic_uncertainty = np.inf
 
         if Q0 > 0:
-            Q0 = rng.normal(scale=Q0, size=(n_arms, self._n_ens))
+            Q0 = rng.normal(scale=Q0, size=(num_arms, self._n_ens))
         if S0 > 0:
-            S0 = np.abs(rng.normal(scale=S0, size=(n_arms, self._n_ens)))
+            S0 = np.abs(rng.normal(scale=S0, size=(num_arms, self._n_ens)))
 
-        self._rewards = np.ones((self._n_arms, self._n_ens)) * Q0
-        self._sqr_rewards = np.ones((self._n_arms, self._n_ens)) * S0
+        self._rewards = np.ones((self._num_arms, self._n_ens)) * Q0
+        self._sqr_rewards = np.ones((self._num_arms, self._n_ens)) * S0
 
         # Total and per-arm step count
         self._step = np.zeros(self._n_ens)
-        self._step_arm = np.zeros((self._n_arms, self._n_ens))
+        self._step_arm = np.zeros((self._num_arms, self._n_ens))
 
     @property
     def min_epistemic_uncertainty(self):
@@ -137,10 +137,10 @@ class DoyaDaYu:
     def policy(self):
         if self._adapt_temperature:
             temperature = self.temperature() - self._min_epistemic_uncertainty
-            # logits = self.rewards[np.arange(self._n_arms), self.rng.randint(self._n_ens, size=self._n_arms)]
+            # logits = self.rewards[np.arange(self._num_arms), self.rng.randint(self._n_ens, size=self._num_arms)]
             logits = self.predict_bandits()[0]
             logits -= logits.max()
-            # probs = np.ones_like(logits) / self._n_arms
+            # probs = np.ones_like(logits) / self._num_arms
             # import pdb
 
             # pdb.set_trace()
@@ -155,7 +155,7 @@ class DoyaDaYu:
             return probs
 
         # Otherwise, acting with thompson sampling
-        return np.eye(self._n_arms)[self._rewards.argmax(0)].mean(0)
+        return np.eye(self._num_arms)[self._rewards.argmax(0)].mean(0)
 
     def play(self):
         if not self._arm_seen.all():
@@ -175,8 +175,8 @@ class DoyaDaYu:
         # import pdb
 
         # pdb.set_trace()
-        # ucb_values = np.zeros(self._n_arms)
-        # for arm in range(self._n_arms):
+        # ucb_values = np.zeros(self._num_arms)
+        # for arm in range(self._num_arms):
         #     if self._step_arm[arm, 0] > 0:
         #         ucb_values[arm] = np.sqrt(
         #             1 * np.log(self._step[0]) / self._step_arm[arm][0]

@@ -1,15 +1,15 @@
 import numpy as np
 
-from mabs import mab
+from dd_bandits.mabs import mab
 
 
 class DiscountedUCB(mab.MAB):
-    def __init__(self, n_arms, rho, gamma, rng=None):
+    def __init__(self, num_arms, rho, gamma, rng=None):
 
         self._gamma = gamma
         self._rho = rho
 
-        super().__init__(n_arms=n_arms, rng=rng)
+        super().__init__(num_arms=num_arms, rng=rng)
 
     def predict_bandits(self):
         return (self._rewards / self._step_arm), np.log(self._step) / (
@@ -17,14 +17,14 @@ class DiscountedUCB(mab.MAB):
         )
 
     def policy(self):
-        return np.eye(self._n_arms)[self.play()]
+        return np.eye(self._num_arms)[self.play()]
 
     def play(self):
         if not self._arm_seen.all():
             return self._arm_seen.argmin()
 
-        ucb_values = np.zeros(self._n_arms)
-        for arm in range(self._n_arms):
+        ucb_values = np.zeros(self._num_arms)
+        for arm in range(self._num_arms):
             if self._step_arm[arm] > 0:
                 ucb_values[arm] = np.sqrt(
                     self._rho * np.log(self._step) / self._step_arm[arm]

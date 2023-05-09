@@ -5,7 +5,7 @@ import numpy as np
 
 
 class TDMAB(abc.ABC):
-    def __init__(self, n_arms: int, rng):
+    def __init__(self, num_arms: int, rng):
 
         if rng is None:
             rng = np.random.RandomState()
@@ -13,12 +13,12 @@ class TDMAB(abc.ABC):
         self._rng = rng
         self._rng_key = jax.random.PRNGKey(self._rng.randint(1000000))
 
-        self._n_arms = n_arms
+        self._num_arms = num_arms
 
         # Total and per-arm step count
         self._step = 0
-        self._step_arm = np.zeros(self._n_arms)
-        self._arm_seen = np.zeros(self._n_arms, dtype=bool)
+        self._step_arm = np.zeros(self._num_arms)
+        self._arm_seen = np.zeros(self._num_arms, dtype=bool)
 
     @abc.abstractmethod
     def _setup_optimizer(self):

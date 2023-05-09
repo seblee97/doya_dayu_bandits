@@ -2,15 +2,15 @@ import jax
 import numpy as np
 import rlax
 
-from mabs import mab
+from dd_bandits.mabs import mab
 
 
 class Boltzmann(mab.MAB):
-    def __init__(self, n_arms, temperature, rng=None):
+    def __init__(self, num_arms, temperature, rng=None):
 
         self._temperature = temperature
 
-        super().__init__(n_arms=n_arms, rng=rng)
+        super().__init__(num_arms=num_arms, rng=rng)
 
     def predict_bandits(self):
         return (self._rewards / self._step_arm), np.log(self._step) / (
@@ -18,7 +18,7 @@ class Boltzmann(mab.MAB):
         )
 
     def policy(self):
-        return np.eye(self._n_arms)[self.play()]
+        return np.eye(self._num_arms)[self.play()]
 
     def play(self):
         if not self._arm_seen.all():

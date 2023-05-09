@@ -1,0 +1,906 @@
+seed: 0
+
+training:
+    change_frequency: 500
+    # add stochasticity to switch times without changing log data structure
+    change_probability: 0.6
+    num_episodes: 8
+    num_seeds: 30
+    default_learning_rate: 0.01
+
+bandit:
+    num_arms: 5
+    mean_lower: -2.
+    mean_upper: 2.
+    scale_lower: 0.001
+    scale_upper: 1.
+    bernoulli: False
+
+agents:
+    - 
+        name: Constant LR / Temp
+        agent: td_doya_dayu
+        n_ens: 20
+        adaptation_modules:
+            # specify any umber of adaptation modules.
+            constant:
+                - type: constant
+                - value: 0.1
+            constant_t:
+                - type: constant
+                - value: 0.1
+            reliability_index:
+                - type: reliability_index
+                - learning_rate: 0.1
+                - num_arms: 5
+            reliability_index_frac:
+                - type: reliability_index
+                - multiple: 0.1
+                - learning_rate: 0.1
+                - num_arms: 5
+            likelihood_shift:
+                - type: likelihood_shift
+                - memory: 10
+                - num_arms: 5
+                - use_direct: True
+            likelihood_shift_2:
+                - type: likelihood_shift
+                - memory: 20
+                - num_arms: 5
+                - use_direct: True
+            likelihood_shift_3:
+                - type: likelihood_shift
+                - memory: 50
+                - num_arms: 5
+                - use_direct: True
+            csum_plus:
+                - type: csum_plus
+                - weight: 1
+            csum_minus:
+                - type: csum_minus
+                - weight: 1
+            deup:
+                - type: deup
+        # specify which adaptation module should be used for lr, temp.
+        learning_rate: constant
+        temperature: constant_t
+        mask_p: 1.
+        q_initialisation: 0.01
+        s_initialisation: 0.5 
+        lr_per_arm: True 
+        scalar_log_spec:
+            - mean_mean
+            - mean_var
+            - var_mean
+            - var_var
+            - reliability_index
+            - likelihood_shift
+            - likelihood_shift_2
+            - likelihood_shift_3
+            - csum_plus
+            - csum_minus
+            - deup
+        use_direct: False
+    - 
+        name: Operation Test
+        agent: td_doya_dayu
+        n_ens: 20
+        adaptation_modules:
+            # specify any umber of adaptation modules.
+            constant:
+                - type: constant
+                - value: 0.1
+            reliability_index:
+                - type: reliability_index
+                - learning_rate: 0.1
+                - num_arms: 5
+            reliability_index_frac:
+                - type: reliability_index
+                - multiple: 0.1
+                - learning_rate: 0.1
+                - num_arms: 5
+            # likelihood_shift:
+            #     - type: likelihood_shift
+            #     - memory: 10
+            #     - num_arms: 5
+            #     - use_direct: True
+            # likelihood_shift_2:
+            #     - type: likelihood_shift
+            #     - memory: 20
+            #     - num_arms: 5
+            #     - use_direct: True
+            # likelihood_shift_3:
+            #     - type: likelihood_shift
+            #     - memory: 50
+            #     - num_arms: 5
+            #     - use_direct: False
+            csum_plus:
+                - type: csum_plus
+                - weight: 1
+            csum_minus:
+                - type: csum_minus
+                - weight: 1
+        # specify which adaptation module should be used for lr, temp.
+        learning_rate:
+            learning_rate_operation: ratio
+            learning_rate_operands: 
+                - reliability_index_frac
+                - mean_var # mean_var is variance of means and var_mean is mean of variances
+        temperature: reliability_index_frac
+        mask_p: 0.5
+        q_initialisation: 0.01
+        s_initialisation: 0.5 
+        lr_per_arm: True 
+        scalar_log_spec:
+            - mean_mean
+            - mean_var
+            - var_mean
+            - var_var
+            - reliability_index
+            - reliability_index_frac
+            - likelihood_shift
+            - likelihood_shift_2
+            - likelihood_shift_3
+            - csum_plus
+            - csum_minus
+        use_direct: False
+    # - 
+    #     name: Operation Test Squared
+    #     agent: td_doya_dayu
+    #     n_ens: 20
+    #     adaptation_modules:
+    #         # specify any umber of adaptation modules.
+    #         constant:
+    #             - type: constant
+    #             - value: 0.1
+    #         reliability_index:
+    #             - type: reliability_index
+    #             - learning_rate: 0.1
+    #             - num_arms: 5
+    #         reliability_index_frac:
+    #             - type: reliability_index
+    #             - multiple: 0.1
+    #             - learning_rate: 0.1
+    #             - num_arms: 5
+    #         # likelihood_shift:
+    #         #     - type: likelihood_shift
+    #         #     - memory: 10
+    #         #     - num_arms: 5
+    #         #     - use_direct: True
+    #         # likelihood_shift_2:
+    #         #     - type: likelihood_shift
+    #         #     - memory: 20
+    #         #     - num_arms: 5
+    #         #     - use_direct: True
+    #         # likelihood_shift_3:
+    #         #     - type: likelihood_shift
+    #         #     - memory: 50
+    #         #     - num_arms: 5
+    #         #     - use_direct: False
+    #         csum_plus:
+    #             - type: csum_plus
+    #             - weight: 1
+    #         csum_minus:
+    #             - type: csum_minus
+    #             - weight: 1
+    #     # specify which adaptation module should be used for lr, temp.
+    #     learning_rate:
+    #         learning_rate_operation: ratio_multiply
+    #         learning_rate_operands:
+    #             - reliability_index_frac
+    #             - reliability_index_frac
+    #             - mean_var # mean_var is variance of means and var_mean is mean of variances
+    #     temperature: reliability_index_frac
+    #     mask_p: 0.5
+    #     q_initialisation: 0.01
+    #     s_initialisation: 0.5 
+    #     lr_per_arm: True 
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    #         - reliability_index
+    #         - reliability_index_frac
+    #         - likelihood_shift
+    #         - likelihood_shift_2
+    #         - likelihood_shift_3
+    #         - csum_plus
+    #         - csum_minus
+    #     use_direct: False
+    # - 
+    #     name: Operation Test 2
+    #     agent: td_doya_dayu
+    #     n_ens: 20
+    #     adaptation_modules:
+    #         # specify any umber of adaptation modules.
+    #         constant:
+    #             - type: constant
+    #             - value: 0.1
+    #         reliability_index:
+    #             - type: reliability_index
+    #             - learning_rate: 0.1
+    #             - num_arms: 5
+    #         reliability_index_frac:
+    #             - type: reliability_index
+    #             - multiple: 0.1
+    #             - learning_rate: 0.1
+    #             - num_arms: 5
+    #         # likelihood_shift:
+    #         #     - type: likelihood_shift
+    #         #     - memory: 10
+    #         #     - num_arms: 5
+    #         #     - use_direct: True
+    #         # likelihood_shift_2:
+    #         #     - type: likelihood_shift
+    #         #     - memory: 20
+    #         #     - num_arms: 5
+    #         #     - use_direct: True
+    #         # likelihood_shift_3:
+    #         #     - type: likelihood_shift
+    #         #     - memory: 50
+    #         #     - num_arms: 5
+    #         #     - use_direct: False
+    #         csum_plus:
+    #             - type: csum_plus
+    #             - weight: 1
+    #         csum_minus:
+    #             - type: csum_minus
+    #             - weight: 1
+    #     # specify which adaptation module should be used for lr, temp.
+    #     learning_rate:
+    #         learning_rate_operation: ratio
+    #         learning_rate_operands: 
+    #             - reliability_index_frac
+    #             - var_mean # mean_var is variance of means and var_mean is mean of variances
+    #     temperature: reliability_index_frac
+    #     mask_p: 0.5
+    #     q_initialisation: 0.01
+    #     s_initialisation: 0.5 
+    #     lr_per_arm: True 
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    #         - reliability_index
+    #         - reliability_index_frac
+    #         - likelihood_shift
+    #         - likelihood_shift_2
+    #         - likelihood_shift_3
+    #         - csum_plus
+    #         - csum_minus
+    #     use_direct: False
+    - 
+        name: Operation Test 3
+        agent: td_doya_dayu
+        n_ens: 20
+        adaptation_modules:
+            # specify any umber of adaptation modules.
+            constant:
+                - type: constant
+                - value: 0.1
+            reliability_index:
+                - type: reliability_index
+                - learning_rate: 0.1
+                - num_arms: 5
+            reliability_index_frac:
+                - type: reliability_index
+                - multiple: 0.1
+                - learning_rate: 0.1
+                - num_arms: 5
+            # likelihood_shift:
+            #     - type: likelihood_shift
+            #     - memory: 10
+            #     - num_arms: 5
+            #     - use_direct: True
+            # likelihood_shift_2:
+            #     - type: likelihood_shift
+            #     - memory: 20
+            #     - num_arms: 5
+            #     - use_direct: True
+            # likelihood_shift_3:
+            #     - type: likelihood_shift
+            #     - memory: 50
+            #     - num_arms: 5
+            #     - use_direct: False
+            csum_plus:
+                - type: csum_plus
+                - weight: 1
+            csum_minus:
+                - type: csum_minus
+                - weight: 1
+        # specify which adaptation module should be used for lr, temp.
+        learning_rate:
+            learning_rate_operation: ratio_select
+            learning_rate_operands: 
+                - reliability_index_frac
+                - var_mean # mean_var is variance of means and var_mean is mean of variances
+        temperature: reliability_index_frac
+        mask_p: 0.5
+        q_initialisation: 0.01
+        s_initialisation: 0.5 
+        lr_per_arm: True 
+        scalar_log_spec:
+            - mean_mean
+            - mean_var
+            - var_mean
+            - var_mean_0
+            - var_mean_1
+            - var_mean_2
+            - var_mean_3
+            - var_mean_4
+            - var_var
+            - reliability_index
+            - reliability_index_frac
+            - likelihood_shift
+            - likelihood_shift_2
+            - likelihood_shift_3
+            - csum_plus
+            - csum_minus
+        use_direct: False
+    # - 
+    #     name: Doya Dayu (RI Temperature)
+    #     agent: td_doya_dayu
+    #     n_ens: 20
+    #     adaptation_modules:
+    #         # specify any umber of adaptation modules.
+    #         constant:
+    #             - type: constant
+    #             - value: 0.1
+    #         reliability_index:
+    #             - type: reliability_index
+    #             - learning_rate: 0.1
+    #             - num_arms: 5
+    #         reliability_index_frac:
+    #             - type: reliability_index
+    #             - multiple: 0.1
+    #             - learning_rate: 0.1
+    #             - num_arms: 5
+    #     # specify which adaptation module should be used for lr, temp.
+    #     learning_rate: constant
+    #     temperature: reliability_index_frac
+    #     mask_p: 0.5
+    #     q_initialisation: 0.01
+    #     s_initialisation: 0.5 
+    #     lr_per_arm: True 
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    #         - reliability_index
+    #     use_direct: False
+    - 
+        name: Doya Dayu (RI Temperature, LR)
+        agent: td_doya_dayu
+        n_ens: 20
+        adaptation_modules:
+            # specify any umber of adaptation modules.
+            constant:
+                - type: constant
+                - value: 0.1
+            reliability_index:
+                - type: reliability_index
+                - learning_rate: 0.1
+                - num_arms: 5
+            reliability_index_frac:
+                - type: reliability_index
+                - multiple: 0.1
+                - learning_rate: 0.1
+                - num_arms: 5
+        # specify which adaptation module should be used for lr, temp.
+        learning_rate: reliability_index_frac
+        temperature: reliability_index_frac
+        mask_p: 0.5
+        q_initialisation: 0.01
+        s_initialisation: 0.5 
+        lr_per_arm: True 
+        scalar_log_spec:
+            - mean_mean
+            - mean_var
+            - var_mean
+            - var_var
+            - reliability_index
+        use_direct: False
+    # - 
+    #     name: Doya Dayu (RI Temperature, LR) 2
+    #     agent: td_doya_dayu
+    #     n_ens: 20
+    #     adaptation_modules:
+    #         # specify any umber of adaptation modules.
+    #         constant:
+    #             - type: constant
+    #             - value: 0.1
+    #         reliability_index:
+    #             - type: reliability_index
+    #             - learning_rate: 0.1
+    #             - num_arms: 5
+    #         reliability_index_frac:
+    #             - type: reliability_index
+    #             - multiple: 0.2
+    #             - learning_rate: 0.1
+    #             - num_arms: 5
+    #     # specify which adaptation module should be used for lr, temp.
+    #     learning_rate: reliability_index_frac
+    #     temperature: reliability_index_frac
+    #     mask_p: 0.5
+    #     q_initialisation: 0.01
+    #     s_initialisation: 0.5 
+    #     lr_per_arm: True 
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    #         - reliability_index
+    #     use_direct: False
+
+
+    # - 
+    #     name: td_doya_dayu2
+    #     agent: td_doya_dayu
+    #     n_ens: 20
+    #     learning_rate: 0.1
+    #     adapt_temperature: True
+    #     mask_p: 1.0
+    #     q_initialisation: 0.01
+    #     s_initialisation: 0.01
+    #     lr_per_arm: True 
+    #     lr_noise_multiplier:
+    #     use_direct: False
+    #     aleatoric: variance
+    # - 
+    #     name: td_doya_dayu3
+    #     agent: td_doya_dayu
+    #     n_ens: 20
+    #     learning_rate: 
+    #     adapt_temperature: True
+    #     mask_p: 0.75
+    #     q_initialisation: 0.01
+    #     s_initialisation: 0.05
+    #     lr_per_arm: True 
+    #     lr_noise_multiplier:
+    #     use_direct: False
+    #     aleatoric: variance
+    # - 
+    #     name: td_doya_dayu2
+    #     agent: td_doya_dayu
+    #     n_ens: 20
+    #     learning_rate: 0.1
+    #     adapt_temperature: True
+    #     mask_p: 1.0
+    #     q_initialisation: 0.01
+    #     s_initialisation: 0.5 
+    #     lr_per_arm: True 
+    #     lr_noise_multiplier: 2
+    #     use_direct: False
+    #     aleatoric: variance
+    # - 
+    #     name: td_doya_dayu3
+    #     agent: td_doya_dayu
+    #     n_ens: 20
+    #     learning_rate: 0.1
+    #     adapt_temperature: True
+    #     mask_p: 1.0
+    #     q_initialisation: 0.01
+    #     s_initialisation: 0.5 
+    #     lr_per_arm: True 
+    #     lr_noise_multiplier:
+    #     use_direct: True
+    #     aleatoric: variance
+    # - 
+    #     name: td_doya_dayu_mem
+    #     agent: td_doya_dayu_memory
+    #     n_ens: 20
+    #     learning_rate: 0.1
+    #     adapt_temperature: True
+    #     mask_p: 1.0
+    #     q_initialisation: 0.01
+    #     s_initialisation: 0.5 
+    #     lr_per_arm: True 
+    #     lr_noise_multiplier: 2
+    #     use_direct: False
+    #     aleatoric: variance
+    #     temperature_memory: 10
+    #     lr_memory: 10
+    # - 
+    #     name: td_doya_dayu_mem2
+    #     agent: td_doya_dayu_memory
+    #     n_ens: 20
+    #     learning_rate: 0.1
+    #     adapt_temperature: True
+    #     mask_p: 1.0
+    #     q_initialisation: 0.01
+    #     s_initialisation: 0.5 
+    #     lr_per_arm: True 
+    #     lr_noise_multiplier: 2
+    #     use_direct: False
+    #     aleatoric: variance
+    #     temperature_memory: 10
+    #     lr_memory: 10
+    # - 
+    #     name: boltzmann
+    #     agent: td_boltzmann
+    #     temperature: 0.1
+    #     learning_rate: 0.1
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # - 
+    #     name: boltzmann2
+    #     agent: td_boltzmann
+    #     temperature: 0.01 
+    #     learning_rate: 0.25
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # - 
+    #     name: boltzmann3
+    #     agent: td_boltzmann
+    #     temperature: 0.01 
+    #     learning_rate: 0.5
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # - 
+    #     name: boltzmann4
+    #     agent: td_boltzmann
+    #     temperature: 0.01 
+    #     learning_rate: 1
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # - 
+    #     name: boltzmann5
+    #     agent: td_boltzmann
+    #     temperature: 0.05
+    #     learning_rate: 0.1
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # - 
+    #     name: boltzmann6
+    #     agent: td_boltzmann
+    #     temperature: 0.05
+    #     learning_rate: 0.25
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # - 
+    #     name: boltzmann7
+    #     agent: td_boltzmann
+    #     temperature: 0.05
+    #     learning_rate: 0.5
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # - 
+    #     name: boltzmann8
+    #     agent: td_boltzmann
+    #     temperature: 0.05
+    #     learning_rate: 1
+    #     q_initialisation: 0.01      
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # - 
+    #     name: boltzmann9
+    #     agent: td_boltzmann
+    #     temperature: 0.1
+    #     learning_rate: 0.1
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # - 
+    #     name: boltzmann10
+    #     agent: td_boltzmann
+    #     temperature: 0.1
+    #     learning_rate: 0.25
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # - 
+    #     name: boltzmann11
+    #     agent: td_boltzmann
+    #     temperature: 0.1
+    #     learning_rate: 0.5
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # - 
+    #     name: boltzmann12
+    #     agent: td_boltzmann
+    #     temperature: 0.1
+    #     learning_rate: 1
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # - 
+    #     name: boltzmann13
+    #     agent: td_boltzmann
+    #     temperature: 0.25
+    #     learning_rate: 0.1
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    - 
+        name: boltzmann14
+        agent: td_boltzmann
+        temperature: 0.25
+        learning_rate: 0.25
+        q_initialisation: 0.01
+        scalar_log_spec:
+            - mean_mean
+            - mean_var
+            - var_mean
+            - var_var
+    # - 
+    #     name: boltzmann15
+    #     agent: td_boltzmann
+    #     temperature: 0.25
+    #     learning_rate: 0.5
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # - 
+    #     name: boltzmann16
+    #     agent: td_boltzmann
+    #     temperature: 0.25
+    #     learning_rate: 1
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # -
+    #     name: ucb
+    #     agent: td_ducb
+    #     rho: 1.0 
+    #     gamma: 1.0 
+    #     learning_rate: 0.01
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # -
+    #     name: ucb1
+    #     agent: td_ducb
+    #     rho: 1.0 
+    #     gamma: 1.0 
+    #     learning_rate: 0.05
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # -
+    #     name: ucb2
+    #     agent: td_ducb
+    #     rho: 1.0 
+    #     gamma: 1.0 
+    #     learning_rate: 0.1
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # -
+    #     name: ucb3
+    #     agent: td_ducb
+    #     rho: 1.0 
+    #     gamma: 1.0 
+    #     learning_rate: 0.2
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # -
+    #     name: discounted_ucb
+    #     agent: td_ducb
+    #     rho: 1.0 
+    #     gamma: 0.99 
+    #     learning_rate: 0.01
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # -
+    #     name: discounted_ucb2
+    #     agent: td_ducb
+    #     rho: 1.0 
+    #     gamma: 0.99 
+    #     learning_rate: 0.05
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # -
+    #     name: discounted_ucb3
+    #     agent: td_ducb
+    #     rho: 1.0 
+    #     gamma: 0.99 
+    #     learning_rate: 0.1
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # -
+    #     name: discounted_ucb4
+    #     agent: td_ducb
+    #     rho: 1.0 
+    #     gamma: 0.99 
+    #     learning_rate: 0.2
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # -
+    #     name: discounted_ucb5
+    #     agent: td_ducb
+    #     rho: 1.0 
+    #     gamma: 0.999
+    #     learning_rate: 0.01
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # -
+    #     name: discounted_ucb6
+    #     agent: td_ducb
+    #     rho: 1.0 
+    #     gamma: 0.999
+    #     learning_rate: 0.05
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # -
+    #     name: discounted_ucb7
+    #     agent: td_ducb
+    #     rho: 1.0 
+    #     gamma: 0.999 
+    #     learning_rate: 0.1
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # -
+    #     name: discounted_ucb8
+    #     agent: td_ducb
+    #     rho: 1.0 
+    #     gamma: 0.999 
+    #     learning_rate: 0.2
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # -
+    #     name: discounted_ucb9
+    #     agent: td_ducb
+    #     rho: 1.0 
+    #     gamma: 0.9999
+    #     learning_rate: 0.01
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    # -
+    #     name: discounted_ucb10
+    #     agent: td_ducb
+    #     rho: 1.0 
+    #     gamma: 0.9999
+    #     learning_rate: 0.05
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+    -
+        name: discounted_ucb11
+        agent: td_ducb
+        rho: 1.0 
+        gamma: 0.9999 
+        learning_rate: 0.1
+        q_initialisation: 0.01
+        scalar_log_spec:
+            - mean_mean
+            - mean_var
+            - var_mean
+            - var_var
+    # -
+    #     name: discounted_ucb12
+    #     agent: td_ducb
+    #     rho: 1.0 
+    #     gamma: 0.9999 
+    #     learning_rate: 0.2
+    #     q_initialisation: 0.01
+    #     scalar_log_spec:
+    #         - mean_mean
+    #         - mean_var
+    #         - var_mean
+    #         - var_var
+
+
+# - 
+#         name: td_doya_dayu3
+#         agent: td_doya_dayu_memory
+#         n_ens: 20
+#         learning_rate: 0.1
+#         adapt_temperature: True
+#         mask_p: 1.0
+#         q_initialisation: 0.0
+#         s_initialisation: 0.0
+#         lr_per_arm: True 
+#         lr_noise_multiplier:
+#         use_direct: False
+#         aleatoric: variance
+#         lr_memory: 10
+#         temperature_memory: 20

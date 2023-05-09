@@ -3,17 +3,17 @@ import jax.numpy as jnp
 import numpy as np
 import optax
 
-from td_mabs import td_mab
+from dd_bandits.td_mabs import td_mab
 
 
 class EpsilonGreedy(td_mab.TDMAB):
-    def __init__(self, n_arms, learning_rate, epsilon, q_initialisation=0.0, rng=None):
+    def __init__(self, num_arms, learning_rate, epsilon, q_initialisation, rng=None):
 
         self._epsilon = epsilon
         self._learning_rate = learning_rate
         self._q_initialisation = q_initialisation
 
-        super().__init__(n_arms=n_arms, rng=rng)
+        super().__init__(num_arms=num_arms, rng=rng)
 
         self._setup_values()
         self._setup_optimizer()
@@ -21,10 +21,10 @@ class EpsilonGreedy(td_mab.TDMAB):
     def _setup_values(self):
         if self._q_initialisation > 0.0:
             self._q_initialisation = self._rng.normal(
-                scale=self._q_initialisation, size=self._n_arms
+                scale=self._q_initialisation, size=self._num_arms
             )
 
-        self._qvals = np.ones(self._n_arms) * self._q_initialisation
+        self._qvals = np.ones(self._num_arms) * self._q_initialisation
         self._qvals = jax.device_put(self._qvals)
 
     def _setup_optimizer(self):
@@ -46,12 +46,12 @@ class EpsilonGreedy(td_mab.TDMAB):
         self._update = jax.jit(update)
 
     def predict_bandits(self):
-        return self._qvals, np.ones(self._n_arms)
+        return self._qvals, np.ones(self._num_arms)
 
     def policy(self):
         a = jax.device_get(self._qvals.argmax()).ravel()[0]
-        return (1 - self._epsilon) * np.eye(self._n_arms)[a] + (
-            self._epsilon / self._n_arms
+        return (1 - self._epsilon) * np.eye(self._num_arms)[a] + (
+            self._epsilon / self._num_arms
         )
 
     def learning_rate(self, action: int):
@@ -65,7 +65,7 @@ class EpsilonGreedy(td_mab.TDMAB):
             return self._arm_seen.argmin()
 
         if self._rng.random() <= self._epsilon:
-            return self._rng.choice(self._n_arms)
+            return self._rng.choice(self._num_arms)
 
         return jax.device_get(self._qvals.argmax()).ravel()[0]
 

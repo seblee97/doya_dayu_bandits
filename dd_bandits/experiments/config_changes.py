@@ -31,7 +31,7 @@ for ens in [5, 10, 20]:
     for m in [0.1, 0.5, 1, 2]:
         for lr in [0.1, 0.25, 1]:
             for q_init in [0.01, 0.0, 0.1]:
-                for s_init in [0.01, 0.0, 0.1, 1.0]:
+                for s_init in [0.01, 0.1, 1.0]:
                     for mask in [1.0, 0.25, 0.5, 0.75]:
                         for ud in [True, False]:
                             dd_agents.append(
@@ -80,7 +80,7 @@ for ens in [5, 10, 20]:
 # boltzmann agents
 boltzmann_agents = []
 for t in [0.01, 0.05, 0.1, 0.25]:
-    for lr in [0.1, 0.25, 0.5, 1]:
+    for lr in [0.1, 0.25, 0.5]:
         for q_init in [0.01]:
             boltzmann_agents.append(
                 {
@@ -96,7 +96,7 @@ for t in [0.01, 0.05, 0.1, 0.25]:
 # ducb agents
 ducb_agents = []
 for r in [1.0]:
-    for g in [0.9, 0.99, 0.999, 0.9999]:
+    for g in [0.99, 0.999, 0.9999]:
         for lr in [0.01, 0.05, 0.2]:
             for q_init in [0.01]:
                 ducb_agents.append(
@@ -118,4 +118,4 @@ for r in [1.0]:
 
 agents = constant_agents + dd_agents + boltzmann_agents + ducb_agents
 
-CONFIG_CHANGES = {"agent_ablation": [{"agents": [agents]}]}
+CONFIG_CHANGES = {"agent_ablation": [{"agents": agents}]}

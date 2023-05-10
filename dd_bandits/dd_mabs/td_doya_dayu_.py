@@ -396,8 +396,15 @@ class DoyaDayu:
     def policy(self):
         temperature = self.temperature()
 
-        logits = np.exp(self.predict_bandits()[0])
-        logits /= logits.sum()
+        # logsumexp trick
+        pred = self.predict_bandits()[0]
+        max_pred = max(pred)
+        scaled_pred = pred - max_pred
+        logits = np.exp(pred - (max_pred + np.log(np.exp(scaled_pred).sum())))
+        # import pdb
+
+        # pdb.set_trace()
+        # logits /= logits.sum()
         # logits = self._qvals[..., 0].mean(-1) - self._qvals[..., 0].mean(-1).max()
         return rlax.softmax(temperature).probs(logits)
 

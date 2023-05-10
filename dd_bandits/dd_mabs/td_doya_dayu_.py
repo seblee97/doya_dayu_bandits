@@ -180,6 +180,18 @@ class DoyaDayu:
         else:
             self._temperature_module_id = temperature
 
+        self._dist = None
+        self._oracle_aleatoric = np.inf
+
+    @property
+    def dist(self):
+        return self._dist
+
+    @dist.setter
+    def dist(self, dist):
+        self._dist = dist
+        self._oracle_aleatoric = np.mean([d.std() for d in dist])
+
     @property
     def lr_module(self):
         if self._learning_rate_module_id is not None:

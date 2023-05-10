@@ -386,6 +386,13 @@ class DoyaDayu:
 
         return log
 
+    def _oracle_epistemic(self):
+        per_arm_epi = [
+            (dist.mean() - self._qvals[i].mean(0)[0]) ** 2
+            for i, dist in enumerate(self._dist)
+        ]
+        return np.mean(per_arm_epi)
+
     def policy(self):
         temperature = self.temperature()
 

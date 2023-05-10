@@ -374,8 +374,8 @@ class DoyaDayu:
         if constants.VAR_MEAN in self._scalar_log_spec:
             var_mean = var_preds.mean(axis=1)
             log[constants.VAR_MEAN] = var_mean.mean()
-            for arm in range(self._num_arms):
-                log[f"{constants.VAR_MEAN}_{arm}"] = var_mean[arm]
+            # for arm in range(self._num_arms):
+            #     log[f"{constants.VAR_MEAN}_{arm}"] = var_mean[arm]
         if constants.VAR_VAR in self._scalar_log_spec:
             var_var = var_preds.var(axis=1)
             log[constants.VAR_VAR] = var_var.mean()

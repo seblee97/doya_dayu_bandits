@@ -169,6 +169,7 @@ class Runner(base_runner.BaseRunner):
                 if not change:
                     seed_ep_dists = dists[seed][episode - 1]
                     best_arm = best_arms[seed][episode - 1]
+                    self._dist_hist[seed, episode] = self._dist_hist[seed, episode - 1]
                 else:
                     if config.bernoulli:
                         probs = np.array(
@@ -232,10 +233,17 @@ class Runner(base_runner.BaseRunner):
             print(f"Seed: {seed}, Episode: {episode}")
 
             for i, name in enumerate(agent_order):
+
                 # agent = experiment_agents[name][1]()
                 agent = agent_instances[name]
                 dist = dists[episode]
                 best_arm = best_arms[episode]
+
+                # oracle to agents
+                try:
+                    agent.dist = dist
+                except:
+                    pass
 
                 for trial in range(change_frequency):
 

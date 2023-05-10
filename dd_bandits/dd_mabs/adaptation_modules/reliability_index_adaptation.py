@@ -31,4 +31,4 @@ class ReliabilityIndexAdaptation(base_adaptation_module.BaseAdaptation):
 
     def __call__(self, arm: int):
         # return self._multiple * np.max(self._expected_delta_2_per_arm)
-        return self._multiple * self._expected_delta_2
+        return self._multiple * np.sqrt(self._expected_delta_2)

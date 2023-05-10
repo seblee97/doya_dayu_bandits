@@ -108,7 +108,34 @@ class DoyaDayu:
             elif operation == constants.RATIO:
                 self._learning_rate_operation = lambda x: self.scalar_log()[
                     operands[0]
-                ] / (self.scalar_log()[operands[0]] + self.scalar_log()[operands[1]])
+                ] / (
+                    self.scalar_log()[operands[0]]
+                    + np.sqrt(self.scalar_log()[operands[1]])
+                )
+            elif operation == constants.ORACLE:
+                self._learning_rate_operation = lambda x: 0.1 + self.scalar_log()[
+                    operands[0]
+                ] / (self.scalar_log()[operands[0]] + self._oracle_aleatoric)
+            elif operation == constants.FULL_ORACLE:
+                self._learning_rate_operation = (
+                    lambda x: 0.1
+                    + self._oracle_epistemic()
+                    / (self._oracle_epistemic() + self._oracle_aleatoric)
+                )
+            elif operation == constants.TANH_RATIO:
+                operand_vals = []
+                for op in operands:
+                    if isinstance(op, float):
+                        operand_vals.append(op)
+                    else:
+                        operand_vals.append(self.scalar_log()[op])
+                self._learning_rate_operation = lambda x: np.tanh(
+                    self.scalar_log()[operand_vals[0]]
+                    / (
+                        self.scalar_log()[operand_vals[0]]
+                        + self.scalar_log()[operand_vals[1]]
+                    )
+                )
             elif operation == constants.RATIO_MULTIPLY:
                 self._learning_rate_operation = (
                     lambda x: self.scalar_log()[operands[0]]

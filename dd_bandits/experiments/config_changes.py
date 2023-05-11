@@ -1,8 +1,8 @@
 import itertools
 
-import numpy as n
+import numpy as np
 
-NUM_ARMS = 10
+NUM_ARMS = 5
 
 constant_agents = []
 for lr in []:
@@ -85,118 +85,12 @@ for ens in [20]:
                                     }
                                 )
 
-# doya-dayu agents
-ddt_agents = []
-for ens in [20]:
-    for m in [0.1]:
-        for lr in [0.1]:
-            for typ in ["oracle", "ratio"]:
-                for q_init in [0.01]:
-                    for s_init in [0.1]:
-                        for mask in [0.5]:
-                            for ud in [False]:
-                                dd_agents.append(
-                                    {
-                                        "name": f"ddt_{ens}_{m}_{q_init}_{s_init}_{mask}_{typ}",
-                                        "agent": "td_doya_dayu",
-                                        "n_ens": ens,
-                                        "adaptation_modules": {
-                                            "constant": [
-                                                {"type": "constant"},
-                                                {"value": 0.25},
-                                            ],
-                                            "reliability_index": [
-                                                {"type": "reliability_index"},
-                                                {"learning_rate": lr},
-                                                {"num_arms": NUM_ARMS},
-                                            ],
-                                            "reliability_index_frac": [
-                                                {"type": "reliability_index"},
-                                                {"multiple": m},
-                                                {"learning_rate": lr},
-                                                {"num_arms": NUM_ARMS},
-                                            ],
-                                        },
-                                        "learning_rate": "constant",
-                                        "temperature": "reliability_index_frac",
-                                        "mask_p": mask,
-                                        "q_initialisation": q_init,
-                                        "s_initialisation": s_init,
-                                        "lr_per_arm": True,
-                                        "scalar_log_spec": [
-                                            "mean_mean",
-                                            "mean_var",
-                                            "var_mean",
-                                            "var_var",
-                                            "reliability_index",
-                                            "reliability_index_frac",
-                                            "likelihood_shift",
-                                        ],
-                                        "use_direct": ud,
-                                    }
-                                )
-
-# doya-dayu agents
-ddlr_agents = []
-for ens in [20]:
-    for m in [0.1]:
-        for lr in [0.1]:
-            for typ in ["oracle", "ratio"]:
-                for q_init in [0.01]:
-                    for s_init in [0.1]:
-                        for mask in [0.5]:
-                            for ud in [False]:
-                                dd_agents.append(
-                                    {
-                                        "name": f"ddt_{ens}_{m}_{q_init}_{s_init}_{mask}_{typ}",
-                                        "agent": "td_doya_dayu",
-                                        "n_ens": ens,
-                                        "adaptation_modules": {
-                                            "constant": [
-                                                {"type": "constant"},
-                                                {"value": 0.25},
-                                            ],
-                                            "reliability_index": [
-                                                {"type": "reliability_index"},
-                                                {"learning_rate": lr},
-                                                {"num_arms": NUM_ARMS},
-                                            ],
-                                            "reliability_index_frac": [
-                                                {"type": "reliability_index"},
-                                                {"multiple": m},
-                                                {"learning_rate": lr},
-                                                {"num_arms": NUM_ARMS},
-                                            ],
-                                        },
-                                        "learning_rate": {
-                                            "learning_rate_operation": typ,
-                                            "learning_rate_operands": [
-                                                "reliability_index_frac",
-                                                "var_mean",
-                                            ],
-                                        },
-                                        "temperature": "constant",
-                                        "mask_p": mask,
-                                        "q_initialisation": q_init,
-                                        "s_initialisation": s_init,
-                                        "lr_per_arm": True,
-                                        "scalar_log_spec": [
-                                            "mean_mean",
-                                            "mean_var",
-                                            "var_mean",
-                                            "var_var",
-                                            "reliability_index",
-                                            "reliability_index_frac",
-                                            "likelihood_shift",
-                                        ],
-                                        "use_direct": ud,
-                                    }
-                                )
-
 # boltzmann agents
 boltzmann_agents = []
-for t in [0.25]:
-    for lr in [0.25]:
+# for t in [0.25]:
+for t in np.linspace(0.1, 1, 10):
+    for lr in np.linspace(0.1, 1, 10):
+        # for lr in [0.25]:
         for q_init in [0.01]:
             boltzmann_agents.append(
                 {
@@ -211,9 +105,9 @@ for t in [0.25]:
 
 # ducb agents
 ducb_agents = []
-for r in [1.0]:
-    for g in [0.9999]:
-        for lr in [0.05]:
+for r in [0.8, 0.9, 0.99, 1.0]:
+    for g in [0.9, 0.99, 0.999, 0.9999]:
+        for lr in np.linspace(0.1, 1, 10):
             for q_init in [0.01]:
                 ducb_agents.append(
                     {

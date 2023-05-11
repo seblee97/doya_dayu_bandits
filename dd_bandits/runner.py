@@ -20,6 +20,7 @@ class Runner(base_runner.BaseRunner):
         self._rng = np.random.RandomState(config.seed)
 
         self._num_arms = config.num_arms
+        self._seed_start = config.seed_start
         self._num_seeds = config.num_seeds
         self._num_episodes = config.num_episodes
         self._change_frequency = config.change_frequency
@@ -109,7 +110,6 @@ class Runner(base_runner.BaseRunner):
         return []
 
     def _setup_agents(self, config):
-
         agent_specs = np.load(
             os.path.join(self._checkpoint_path, "agents.npy"), allow_pickle=True
         )[()]
@@ -320,7 +320,27 @@ class Runner(base_runner.BaseRunner):
         # return_dict = manager.dict()
         # queues = [mp.Queue() for _ in range(self._num_seeds)]
 
-        for seed in range(self._num_seeds):
+        for seed in range(self._seed_start, self._seed_start + self._num_seeds):
+
+            # Runner.single_seed_train(
+            #     seed,
+            #     self._agents,
+            #     self._agent_order,
+            #     self._change_frequency,
+            #     self._num_episodes,
+            #     self._dists[seed],
+            #     self._regret,
+            #     self._correct_arm,
+            #     self._learning_rate,
+            #     self._temperature,
+            #     self._bernoulli,
+            #     self._rng,
+            #     self._moment_error,
+            #     self._dist_hist[seed],
+            #     self._scalar_logs,
+            #     self._best_arms[seed],
+            #     self._checkpoint_path,
+            # )
 
             process = mp.Process(
                 target=Runner.single_seed_train,

@@ -20,7 +20,6 @@ class Runner(base_runner.BaseRunner):
         self._rng = np.random.RandomState(config.seed)
 
         self._num_arms = config.num_arms
-        self._seed_start = config.seed_start
         self._num_seeds = config.num_seeds
         self._num_episodes = config.num_episodes
         self._change_frequency = config.change_frequency
@@ -320,7 +319,7 @@ class Runner(base_runner.BaseRunner):
         # return_dict = manager.dict()
         # queues = [mp.Queue() for _ in range(self._num_seeds)]
 
-        for seed in range(self._seed_start, self._seed_start + self._num_seeds):
+        for seed in range(self._num_seeds):
 
             # Runner.single_seed_train(
             #     seed,

@@ -23,10 +23,6 @@ class ConfigTemplate:
                 requirements=[lambda x: x > 0],
             ),
             config_field.Field(
-                name=constants.SEED_START,
-                types=[int],
-            ),
-            config_field.Field(
                 name=constants.NUM_SEEDS,
                 types=[int],
             ),

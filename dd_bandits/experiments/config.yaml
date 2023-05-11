@@ -5,6 +5,7 @@ training:
     # add stochasticity to switch times without changing log data structure
     change_probability: 0.4
     num_episodes: 16
+    seed_start: 0
     num_seeds: 100
     default_learning_rate: 0.01
 

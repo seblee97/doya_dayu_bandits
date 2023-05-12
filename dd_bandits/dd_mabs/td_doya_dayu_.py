@@ -29,6 +29,7 @@ class DoyaDayu:
         mask_p: float,
         q_initialisation: float,
         s_initialisation: float,
+        offset: float,
         adaptation_modules: List,
         learning_rate: Union[str, float, Dict],
         temperature: Union[str, float, Dict],
@@ -64,6 +65,8 @@ class DoyaDayu:
 
         self._q_initialisation = q_initialisation
         self._qv_initialisation = s_initialisation
+
+        self._offset = offset
 
         # Total and per-arm step count
         self._total_steps = 0
@@ -106,19 +109,23 @@ class DoyaDayu:
                     [self.scalar_log().get(o) for o in operands],
                 )
             elif operation == constants.RATIO:
-                self._learning_rate_operation = lambda x: self.scalar_log()[
-                    operands[0]
-                ] / (
-                    self.scalar_log()[operands[0]]
-                    + np.sqrt(self.scalar_log()[operands[1]])
+                self._learning_rate_operation = (
+                    lambda x: self._offset
+                    + self.scalar_log()[operands[0]]
+                    / (
+                        self.scalar_log()[operands[0]]
+                        + np.sqrt(self.scalar_log()[operands[1]])
+                    )
                 )
             elif operation == constants.ORACLE:
-                self._learning_rate_operation = lambda x: 0.1 + self.scalar_log()[
-                    operands[0]
-                ] / (self.scalar_log()[operands[0]] + self._oracle_aleatoric)
+                self._learning_rate_operation = (
+                    lambda x: self._offset
+                    + self.scalar_log()[operands[0]]
+                    / (self.scalar_log()[operands[0]] + self._oracle_aleatoric)
+                )
             elif operation == constants.FULL_ORACLE:
                 self._learning_rate_operation = (
-                    lambda x: 0.1
+                    lambda x: self._offset
                     + self._oracle_epistemic()
                     / (self._oracle_epistemic() + self._oracle_aleatoric)
                 )

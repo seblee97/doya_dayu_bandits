@@ -30,14 +30,14 @@ for lr in []:
 
 # doya-dayu agents
 dd_agents = []
-for ens in [5, 10, 20]:
-    for offset in [0.0, 0.1, 0.2, 0.3]:
-        for m in [0.1, 0.2, 0.3]:
-            for lr in [0.1, 0.2, 0.3]:
+for ens in [20]:
+    for offset in [0.0]:
+        for m in [0.1]:
+            for lr in [0.1]:
                 for typ in ["full_oracle", "oracle", "ratio"]:
                     for q_init in [0.01]:
                         for s_init in [0.1]:
-                            for mask in [0.25, 0.5, 0.75]:
+                            for mask in [0.5]:
                                 for ud in [False]:
                                     dd_agents.append(
                                         {
@@ -89,10 +89,10 @@ for ens in [5, 10, 20]:
 
 # boltzmann agents
 boltzmann_agents = []
-# for t in [0.25]:
-for t in np.linspace(0.1, 1, 10):
-    for lr in np.linspace(0.1, 1, 10):
-        # for lr in [0.25]:
+for t in [0.6]:
+    # for t in np.linspace(0.1, 1, 10):
+    # for lr in np.linspace(0.1, 1, 10):
+    for lr in [0.2]:
         for q_init in [0.01]:
             boltzmann_agents.append(
                 {
@@ -110,25 +110,27 @@ ducb_agents = []
 for r in [0.8, 0.9, 0.99, 1.0]:
     for g in [0.9, 0.99, 0.999, 0.9999]:
         for lr in np.linspace(0.1, 1, 10):
-            for q_init in [0.01]:
-                ducb_agents.append(
-                    {
-                        "name": f"ducb_{r}_{g}_{lr}_{q_init}",
-                        "agent": "td_ducb",
-                        "rho": r,
-                        "gamma": g,
-                        "learning_rate": lr,
-                        "q_initialisation": q_init,
-                        "scalar_log_spec": [
-                            "mean_mean",
-                            "mean_var",
-                            "var_mean",
-                            "var_var",
-                        ],
-                    }
-                )
+            for t in [0.6]:
+                for q_init in [0.01]:
+                    ducb_agents.append(
+                        {
+                            "name": f"ducb_{r}_{g}_{lr}_{t}_{q_init}",
+                            "agent": "td_ducb",
+                            "rho": r,
+                            "gamma": g,
+                            "learning_rate": lr,
+                            "temperature": t,
+                            "q_initialisation": q_init,
+                            "scalar_log_spec": [
+                                "mean_mean",
+                                "mean_var",
+                                "var_mean",
+                                "var_var",
+                            ],
+                        }
+                    )
 
 # agents = constant_agents + dd_agents + boltzmann_agents + ducb_agents
 # agents = ducb_agents + dd_agents + ddt_agents + ddlr_agents + boltzmann_agents
-agents = dd_agents
+agents = ducb_agents
 # CONFIG_CHANGES = {"agent_ablation": [{"agents": agents}]}

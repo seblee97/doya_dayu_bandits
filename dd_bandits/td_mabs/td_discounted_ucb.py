@@ -4,6 +4,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import optax
+import rlax
 
 from dd_bandits import constants
 from dd_bandits.td_mabs import td_mab
@@ -16,6 +17,7 @@ class DiscountedUCB(td_mab.TDMAB):
         rho: float,
         gamma: float,
         learning_rate: float,
+        temperature: float,
         q_initialisation: float,
         scalar_log_spec: List[str],
         rng=None,
@@ -24,6 +26,7 @@ class DiscountedUCB(td_mab.TDMAB):
         self._rho = rho
         self._gamma = gamma
         self._learning_rate = learning_rate
+        self._temperature = temperature
         self._q_initialisation = q_initialisation
 
         self._scalar_log_spec = scalar_log_spec
@@ -74,6 +77,8 @@ class DiscountedUCB(td_mab.TDMAB):
         if not self._arm_seen.all():
             return self._arm_seen.argmin()
 
+        rng_key, self._rng_key = jax.random.split(self._rng_key, 2)
+
         ucb_values = np.zeros(self._num_arms)
         for arm in range(self._num_arms):
             if self._step_arm[arm] > 0:
@@ -81,14 +86,18 @@ class DiscountedUCB(td_mab.TDMAB):
                     self._rho * np.log(self._step) / self._step_arm[arm]
                 )
 
-        action = (jax.device_get(self._qvals) + ucb_values).argmax()
-        return action
+        return jax.device_get(
+            rlax.softmax(self._temperature).sample(rng_key, self._qvals + ucb_values)
+        ).ravel()[0]
+
+        # action = (jax.device_get(self._qvals) + ucb_values).argmax()
+        # return action
 
     def learning_rate(self, action: int):
         return self._learning_rate
 
     def temperature(self):
-        return None
+        return self._temperature
 
     def update(self, arm, reward):
         self._arm_seen[arm] = True

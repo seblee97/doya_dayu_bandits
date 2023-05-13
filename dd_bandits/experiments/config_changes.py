@@ -41,7 +41,7 @@ for ens in [5, 10, 20]:
                                 for ud in [False]:
                                     dd_agents.append(
                                         {
-                                            "name": f"dd_{ens}_{m}_{q_init}_{s_init}_{mask}_{typ}",
+                                            "name": f"dd_{ens}_{offset}_{m}_{lr}_{q_init}_{s_init}_{mask}_{typ}",
                                             "agent": "td_doya_dayu",
                                             "n_ens": ens,
                                             "adaptation_modules": {

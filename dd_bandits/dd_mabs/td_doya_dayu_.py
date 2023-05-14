@@ -171,6 +171,10 @@ class DoyaDayu:
                     lambda x1, x2: x1 * x2,
                     [self._adaptation_modules[o](None) for o in operands],
                 )
+            elif operation == constants.SCALED:
+                self._temperature_operation = (
+                    lambda x: self.scalar_log()[operands[0]] * operands[1]
+                )
             elif operation == constants.DIVIDE:
                 self._temperature_operation = lambda x: functools.reduce(
                     lambda x1, x2: x1 / x2,

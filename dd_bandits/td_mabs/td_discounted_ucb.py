@@ -101,10 +101,10 @@ class DiscountedUCB(td_mab.TDMAB):
 
     def update(self, arm, reward):
         self._arm_seen[arm] = True
-        self._step += 1
-        self._step_arm[arm] += 1
         self._step *= self._gamma
         self._step_arm[arm] *= self._gamma
+        self._step += 1
+        self._step_arm[arm] += 1
         self._qvals, self._opt_state = self._update(
             self._qvals, arm, reward, self._opt_state
         )

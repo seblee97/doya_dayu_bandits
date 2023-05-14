@@ -34,58 +34,65 @@ for ens in [20]:
     for offset in [0.0]:
         for m in [0.1]:
             for lr in [0.1]:
-                for typ in ["full_oracle", "oracle", "ratio"]:
-                    for q_init in [0.01]:
-                        for s_init in [0.1]:
-                            for mask in [0.5]:
-                                for ud in [False]:
-                                    dd_agents.append(
-                                        {
-                                            "name": f"dd_{ens}_{offset}_{m}_{lr}_{q_init}_{s_init}_{mask}_{typ}",
-                                            "agent": "td_doya_dayu",
-                                            "n_ens": ens,
-                                            "adaptation_modules": {
-                                                "constant": [
-                                                    {"type": "constant"},
-                                                    {"value": 0.25},
-                                                ],
-                                                "reliability_index": [
-                                                    {"type": "reliability_index"},
-                                                    {"learning_rate": lr},
-                                                    {"num_arms": NUM_ARMS},
-                                                ],
-                                                "reliability_index_frac": [
-                                                    {"type": "reliability_index"},
-                                                    {"multiple": m},
-                                                    {"learning_rate": lr},
-                                                    {"num_arms": NUM_ARMS},
-                                                ],
-                                            },
-                                            "learning_rate": {
-                                                "learning_rate_operation": typ,
-                                                "learning_rate_operands": [
-                                                    "reliability_index_frac",
+                for sc in [1, 1.5, 2]:
+                    for typ in ["full_oracle", "oracle", "ratio"]:
+                        for q_init in [0.01]:
+                            for s_init in [0.1]:
+                                for mask in [0.5]:
+                                    for ud in [False]:
+                                        dd_agents.append(
+                                            {
+                                                "name": f"dd_{ens}_{offset}_{m}_{lr}_{q_init}_{sc}_{s_init}_{mask}_{typ}",
+                                                "agent": "td_doya_dayu",
+                                                "n_ens": ens,
+                                                "adaptation_modules": {
+                                                    "constant": [
+                                                        {"type": "constant"},
+                                                        {"value": 0.25},
+                                                    ],
+                                                    "reliability_index": [
+                                                        {"type": "reliability_index"},
+                                                        {"learning_rate": lr},
+                                                        {"num_arms": NUM_ARMS},
+                                                    ],
+                                                    "reliability_index_frac": [
+                                                        {"type": "reliability_index"},
+                                                        {"multiple": m},
+                                                        {"learning_rate": lr},
+                                                        {"num_arms": NUM_ARMS},
+                                                    ],
+                                                },
+                                                "learning_rate": {
+                                                    "learning_rate_operation": typ,
+                                                    "learning_rate_operands": [
+                                                        "reliability_index_frac",
+                                                        "var_mean",
+                                                    ],
+                                                },
+                                                "temperature": {
+                                                    "temperature_operation": "scaled",
+                                                    "temperature_opreands": [
+                                                        "reliability_index_frac",
+                                                        sc,
+                                                    ],
+                                                },
+                                                "mask_p": mask,
+                                                "q_initialisation": q_init,
+                                                "offset": offset,
+                                                "s_initialisation": s_init,
+                                                "lr_per_arm": True,
+                                                "scalar_log_spec": [
+                                                    "mean_mean",
+                                                    "mean_var",
                                                     "var_mean",
+                                                    "var_var",
+                                                    "reliability_index",
+                                                    "reliability_index_frac",
+                                                    "likelihood_shift",
                                                 ],
-                                            },
-                                            "temperature": "reliability_index_frac",
-                                            "mask_p": mask,
-                                            "q_initialisation": q_init,
-                                            "offset": offset,
-                                            "s_initialisation": s_init,
-                                            "lr_per_arm": True,
-                                            "scalar_log_spec": [
-                                                "mean_mean",
-                                                "mean_var",
-                                                "var_mean",
-                                                "var_var",
-                                                "reliability_index",
-                                                "reliability_index_frac",
-                                                "likelihood_shift",
-                                            ],
-                                            "use_direct": ud,
-                                        }
-                                    )
+                                                "use_direct": ud,
+                                            }
+                                        )
 
 # boltzmann agents
 boltzmann_agents = []

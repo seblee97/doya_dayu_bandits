@@ -86,18 +86,18 @@ class DiscountedUCB(td_mab.TDMAB):
                     self._rho * np.log(self._step) / self._step_arm[arm]
                 )
 
-        return jax.device_get(
-            rlax.softmax(self._temperature).sample(rng_key, self._qvals + ucb_values)
-        ).ravel()[0]
+        # return jax.device_get(
+        #     rlax.softmax(self._temperature).sample(rng_key, self._qvals + ucb_values)
+        # ).ravel()[0]
 
-        # action = (jax.device_get(self._qvals) + ucb_values).argmax()
+        action = (jax.device_get(self._qvals) + ucb_values).argmax()
         # return action
 
     def learning_rate(self, action: int):
         return self._learning_rate
 
     def temperature(self):
-        return self._temperature
+        return None
 
     def update(self, arm, reward):
         self._arm_seen[arm] = True

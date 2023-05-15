@@ -175,6 +175,11 @@ class DoyaDayu:
                 self._temperature_operation = (
                     lambda x: self.scalar_log()[temp_operands[0]] * temp_operands[1]
                 )
+            elif temp_operation == constants.SCALED_OFFSET:
+                self._temperature_operation = (
+                    lambda x: self.scalar_log()[temp_operands[0]] * temp_operands[1]
+                    + temp_operands[2]
+                )
             elif temp_operation == constants.DIVIDE:
                 self._temperature_operation = lambda x: functools.reduce(
                     lambda x1, x2: x1 / x2,

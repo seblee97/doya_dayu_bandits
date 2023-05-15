@@ -164,29 +164,32 @@ class DoyaDayu:
             self._learning_rate_module_id = learning_rate
         if isinstance(temperature, dict):
             self._temperature_module_id = None
-            operation = temperature[constants.TEMPERATURE_OPERATION]
-            operands = temperature[constants.TEMPERATURE_OPERANDS]
-            if operation == constants.MULTIPLY:
+            temp_operation = temperature[constants.TEMPERATURE_OPERATION]
+            temp_operands = temperature[constants.TEMPERATURE_OPERANDS]
+            if temp_operation == constants.MULTIPLY:
                 self._temperature_operation = lambda x: functools.reduce(
                     lambda x1, x2: x1 * x2,
-                    [self._adaptation_modules[o](None) for o in operands],
+                    [self._adaptation_modules[o](None) for o in temp_operands],
                 )
-            elif operation == constants.SCALED:
+            elif temp_operation == constants.SCALED:
                 self._temperature_operation = (
-                    lambda x: self.scalar_log()[operands[0]] * operands[1]
+                    lambda x: self.scalar_log()[temp_operands[0]] * temp_operands[1]
                 )
-            elif operation == constants.DIVIDE:
+            elif temp_operation == constants.DIVIDE:
                 self._temperature_operation = lambda x: functools.reduce(
                     lambda x1, x2: x1 / x2,
-                    [self.scalar_log().get(o) for o in operands],
+                    [self.scalar_log().get(o) for o in temp_operands],
                 )
-            elif operation == constants.RATIO:
+            elif temp_operation == constants.RATIO:
                 self._temperature_operation = lambda x: self.scalar_log()[
-                    operands[0]
-                ] / (self.scalar_log()[operands[0]] + self.scalar_log()[operands[1]])
-            elif operation == constants.LOG:
+                    temp_operands[0]
+                ] / (
+                    self.scalar_log()[temp_operands[0]]
+                    + self.scalar_log()[temp_operands[1]]
+                )
+            elif temp_operation == constants.LOG:
                 self._temperature_operation = lambda x: np.log(
-                    self._scalar_log()[operands[0]]
+                    self._scalar_log()[temp_operands[0]]
                 )
         else:
             self._temperature_module_id = temperature

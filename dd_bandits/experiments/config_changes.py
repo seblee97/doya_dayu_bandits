@@ -71,7 +71,7 @@ for ens in [20]:
                                                 },
                                                 "temperature": {
                                                     "temperature_operation": "scaled",
-                                                    "temperature_opreands": [
+                                                    "temperature_operands": [
                                                         "reliability_index_frac",
                                                         sc,
                                                     ],

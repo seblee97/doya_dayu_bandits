@@ -373,6 +373,7 @@ class Runner(base_runner.BaseRunner):
                     self._regret,
                     self._emp_regret,
                     self._policy,
+                    self._actions,
                     self._correct_arm,
                     self._learning_rate,
                     self._temperature,
@@ -438,6 +439,7 @@ class Runner(base_runner.BaseRunner):
         for array, array_name in [
             (self._dist_hist, constants.DIST_HIST),
             (self._regret, constants.REGRET),
+            (self._emp_regret, constants.EMP_REGRET),
             (self._correct_arm, constants.CORRECT_ARM),
             (self._learning_rate, constants.LEARNING_RATE),
             (self._temperature, constants.TEMPERATURE),
@@ -445,6 +447,7 @@ class Runner(base_runner.BaseRunner):
             (self._aleatoric_uncertainty, constants.ALEATORIC_UNCERTAINTY),
             (self._min_uncertainty, constants.MIN_UNCERTAINTY),
             (self._policy, constants.POLICY),
+            (self._actions, constants.ACTIONS),
             (self._moment_error, constants.MOMENT_ERROR),
         ]:
             np.save(file=os.path.join(self._array_path, array_name), arr=array)

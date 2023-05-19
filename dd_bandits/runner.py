@@ -33,12 +33,14 @@ class Runner(base_runner.BaseRunner):
         (
             self._dist_hist,
             self._regret,
+            self._emp_regret,
             self._correct_arm,
             self._learning_rate,
             self._temperature,
             self._epistemic_uncertainty,
             self._aleatoric_uncertainty,
             self._min_uncertainty,
+            self._actions,
             self._policy,
             self._moment_error,
             self._scalar_logs,
@@ -71,12 +73,14 @@ class Runner(base_runner.BaseRunner):
             )
 
         regret = np.zeros(scalar_data_shape)
+        emp_regret = np.zeros(scalar_data_shape)
         correct_arm = np.zeros(scalar_data_shape)
         learning_rate = np.zeros(scalar_data_shape)
         temperature = np.zeros(scalar_data_shape)
         epistemic_uncertainty = np.zeros(scalar_data_shape)
         aleatoric_uncertainty = np.zeros(scalar_data_shape)
         min_uncertainty = np.zeros(scalar_data_shape)
+        actions = np.zeros(scalar_data_shape)
         policy = np.zeros(scalar_data_shape + (config.num_arms,))
         moment_error = np.zeros(scalar_data_shape + (2,))
 
@@ -94,12 +98,14 @@ class Runner(base_runner.BaseRunner):
         return (
             dist_hist,
             regret,
+            emp_regret,
             correct_arm,
             learning_rate,
             temperature,
             epistemic_uncertainty,
             aleatoric_uncertainty,
             min_uncertainty,
+            actions,
             policy,
             moment_error,
             scalar_logs,
@@ -213,6 +219,9 @@ class Runner(base_runner.BaseRunner):
         num_episodes,
         dists,
         regret,
+        emp_regret,
+        policy,
+        actions,
         correct_arm,
         learning_rate,
         temperature,
@@ -247,6 +256,10 @@ class Runner(base_runner.BaseRunner):
                 for trial in range(change_frequency):
 
                     action = agent.play()
+
+                    emp_regret[i, episode, trial] = (
+                        dist[best_arm].rvs() - dist[action].rvs()
+                    )
                     regret[i, episode, trial] = (
                         dist[best_arm].mean() - dist[action].mean()
                     )
@@ -264,7 +277,9 @@ class Runner(base_runner.BaseRunner):
                     # self._epistemic_uncertainty[
                     #     i, seed, episode, trial
                     # ] = agent.epistemic_uncertainty
-                    # self._policy[i, seed, episode, trial] = agent.policy()
+                    # actions[i, episode, trial]
+                    actions[i, episode, trial] = action
+                    policy[i, episode, trial] = agent.policy()
 
                     agent.update(action, dist[action].rvs(random_state=rng))
                     means, vars = agent.predict_bandits()
@@ -291,7 +306,10 @@ class Runner(base_runner.BaseRunner):
                         scalar_logs[scalar_name][i, episode, trial] = scalar_value
 
         data = {
+            "emp_regret": emp_regret,
             "regret": regret,
+            "actions": actions,
+            "policy": policy,
             "temperature": temperature,
             "learning_rate": learning_rate,
             "best_arms": best_arms,
@@ -329,6 +347,8 @@ class Runner(base_runner.BaseRunner):
             #     self._num_episodes,
             #     self._dists[seed],
             #     self._regret,
+            #     self._emp_regret,
+            #     self._policy,
             #     self._correct_arm,
             #     self._learning_rate,
             #     self._temperature,
@@ -351,6 +371,8 @@ class Runner(base_runner.BaseRunner):
                     self._num_episodes,
                     self._dists[seed],
                     self._regret,
+                    self._emp_regret,
+                    self._policy,
                     self._correct_arm,
                     self._learning_rate,
                     self._temperature,
@@ -370,6 +392,9 @@ class Runner(base_runner.BaseRunner):
             process.join()
 
         regrets = []
+        emp_regrets = []
+        actions = []
+        policies = []
         temperatures = []
         learning_rates = []
         best_arms = []
@@ -383,6 +408,9 @@ class Runner(base_runner.BaseRunner):
                 allow_pickle=True,
             )[()]
             regrets.append(data["regret"])
+            emp_regrets.append(data["emp_regret"])
+            actions.append(data["actions"])
+            policies.append(data["policy"])
             temperatures.append(data["temperature"])
             learning_rates.append(data["learning_rate"])
             best_arms.append(data["best_arms"])
@@ -392,6 +420,9 @@ class Runner(base_runner.BaseRunner):
                 scalar_logs[k].append(v)
 
         self._regret = np.swapaxes(np.stack(regrets), 0, 1)
+        self._emp_regret = np.swapaxes(np.stack(emp_regrets), 0, 1)
+        self._actions = np.swapaxes(np.stack(actions), 0, 1)
+        self._policy = np.swapaxes(np.stack(policies), 0, 1)
         self._temperature = np.swapaxes(np.stack(temperatures), 0, 1)
         self._correct_arm = np.swapaxes(np.stack(correct_arms), 0, 1)
         self._moment_error = np.swapaxes(np.stack(moment_errors), 0, 1)

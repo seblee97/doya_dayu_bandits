@@ -91,7 +91,7 @@ class DiscountedUCB(td_mab.TDMAB):
         # ).ravel()[0]
 
         action = (jax.device_get(self._qvals) + ucb_values).argmax()
-        # return action
+        return action
 
     def learning_rate(self, action: int):
         return self._learning_rate

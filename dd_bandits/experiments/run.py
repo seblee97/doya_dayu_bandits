@@ -4,7 +4,7 @@ import os
 import numpy as np
 from run_modes import cluster_run, parallel_run, serial_run, single_run, utils
 
-from dd_bandits import constants, runner
+from dd_bandits import constants, runner, two_ab_runner
 from dd_bandits.experiments import config
 
 MAIN_FILE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -51,9 +51,9 @@ if __name__ == "__main__":
     config_instance = config_class(args.config_path)
 
     runner_class_name = "Runner"
-    runner_module_name = "runner"
+    runner_module_name = "two_ab_runner"
     runner_module_path = os.path.join(MAIN_FILE_PATH, "..", "runners", "core_runner.py")
-    runner_class = runner.Runner
+    runner_class = two_ab_runner.Runner
 
     if args.mode == constants.SINGLE:
 

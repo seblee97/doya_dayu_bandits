@@ -257,9 +257,9 @@ class Runner(base_runner.BaseRunner):
 
                     action = agent.play()
 
-                    emp_regret[i, episode, trial] = (
-                        dist[best_arm].rvs() - dist[action].rvs()
-                    )
+                    arm_sample = dist[action].rvs(random_state=rng)
+
+                    emp_regret[i, episode, trial] = dist[best_arm].mean() - arm_sample
                     regret[i, episode, trial] = (
                         dist[best_arm].mean() - dist[action].mean()
                     )
@@ -281,7 +281,7 @@ class Runner(base_runner.BaseRunner):
                     actions[i, episode, trial] = action
                     policy[i, episode, trial] = agent.policy()
 
-                    agent.update(action, dist[action].rvs(random_state=rng))
+                    agent.update(action, arm_sample)
                     means, vars = agent.predict_bandits()
 
                     if bernoulli:

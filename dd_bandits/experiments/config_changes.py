@@ -34,9 +34,9 @@ for ens in [20]:
     for offset in [0.0]:
         for m in [0.1]:
             for lr in [0.1]:
-                for sc in [1, 1.5, 2]:
-                    for os in [0, 0.2, 0.4]:
-                        for typ in ["full_oracle", "oracle", "ratio"]:
+                for sc in [1]:
+                    for os in [0, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15]:
+                        for typ in ["oracle", "full_oracle", "ratio"]:
                             for q_init in [0.01]:
                                 for s_init in [0.1]:
                                     for mask in [0.5]:
@@ -75,10 +75,9 @@ for ens in [20]:
                                                         ],
                                                     },
                                                     "temperature": {
-                                                        "temperature_operation": "scaled",
+                                                        "temperature_operation": typ,
                                                         "temperature_operands": [
                                                             "reliability_index_frac",
-                                                            sc,
                                                             os,
                                                         ],
                                                     },
@@ -102,10 +101,10 @@ for ens in [20]:
 
 # boltzmann agents
 boltzmann_agents = []
-for t in [0.6]:
+for t in [0.25]:
     # for t in np.linspace(0.1, 1, 10):
     # for lr in np.linspace(0.1, 1, 10):
-    for lr in [0.2]:
+    for lr in [0.25]:
         for q_init in [0.01]:
             boltzmann_agents.append(
                 {
@@ -120,9 +119,9 @@ for t in [0.6]:
 
 # ducb agents
 ducb_agents = []
-for r in [0.8, 0.9, 0.99, 1.0]:
-    for g in [0.9, 0.99, 0.999, 0.9999]:
-        for lr in np.linspace(0.1, 1, 10):
+for r in [1.0]:
+    for g in [0.9999]:
+        for lr in [0.05]:
             for t in [0.6]:
                 for q_init in [0.01]:
                     ducb_agents.append(
@@ -145,5 +144,6 @@ for r in [0.8, 0.9, 0.99, 1.0]:
 
 # agents = constant_agents + dd_agents + boltzmann_agents + ducb_agents
 # agents = ducb_agents + dd_agents + ddt_agents + ddlr_agents + boltzmann_agents
-agents = ducb_agents
+agents = dd_agents
 # CONFIG_CHANGES = {"agent_ablation": [{"agents": agents}]}
+print(len(agents))

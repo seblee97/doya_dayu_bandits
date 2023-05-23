@@ -186,15 +186,41 @@ class DoyaDayu:
                     [self.scalar_log().get(o) for o in temp_operands],
                 )
             elif temp_operation == constants.RATIO:
-                self._temperature_operation = lambda x: self.scalar_log()[
-                    temp_operands[0]
-                ] / (
-                    self.scalar_log()[temp_operands[0]]
-                    + self.scalar_log()[temp_operands[1]]
+                self._stimulation_level_baseline = temp_operands[1]
+                self._stimulation_level = 0.0
+                self._temperature_operation = (
+                    lambda x: self.scalar_log().get(
+                        temp_operands[1], self._stimulation_level
+                    )
+                    + self.scalar_log()[temp_operands[0]]
                 )
+                # self._temperature_operation = lambda x: self.scalar_log()[
+                #     temp_operands[0]
+                # ] / (
+                #     self.scalar_log()[temp_operands[0]]
+                #     + self.scalar_log()[temp_operands[1]]
+                # )
             elif temp_operation == constants.LOG:
                 self._temperature_operation = lambda x: np.log(
                     self._scalar_log()[temp_operands[0]]
+                )
+            elif temp_operation == constants.FULL_ORACLE:
+                self._stimulation_level_baseline = temp_operands[1]
+                self._stimulation_level = 0.0
+                self._temperature_operation = (
+                    lambda x: self.scalar_log().get(
+                        temp_operands[1], self._stimulation_level
+                    )
+                    + self._oracle_epistemic()
+                )
+            elif temp_operation == constants.ORACLE:
+                self._stimulation_level_baseline = temp_operands[1]
+                self._stimulation_level = 0.0
+                self._temperature_operation = (
+                    lambda x: self.scalar_log().get(
+                        temp_operands[1], self._stimulation_level
+                    )
+                    + self.scalar_log()[temp_operands[0]]
                 )
         else:
             self._temperature_module_id = temperature
@@ -217,6 +243,12 @@ class DoyaDayu:
             return self._adaptation_modules[self._learning_rate_module_id]
         else:
             return self._learning_rate_operation
+
+    def toggle_stimulation(self):
+        if not self._stimulation_level:
+            self._stimulation_level = self._stimulation_level_baseline
+        else:
+            self._stimulation_level = 0.0
 
     @property
     def temperature_module(self):

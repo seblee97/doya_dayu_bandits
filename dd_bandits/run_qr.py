@@ -365,6 +365,16 @@ class QR(TDMAB):
         else:
             if self._adapt_temp is None:
                 pass
+            elif self._adapt_temp["type"] == "min_epistemic":
+                factor = self._adapt_temp.get("factor", 1)
+                self._temperature = factor * np.min(
+                    [self.epistemic_uncertainty(arm) for arm in range(self._num_arms)]
+                )
+            elif self._adapt_temp["type"] == "max_epistemic":
+                factor = self._adapt_temp.get("factor", 1)
+                self._temperature = factor * np.max(
+                    [self.epistemic_uncertainty(arm) for arm in range(self._num_arms)]
+                )
             elif self._adapt_temp["type"] == "epistemic":
                 factor = self._adapt_temp.get("factor", 1)
                 self._temperature = factor * np.mean(
@@ -1117,6 +1127,54 @@ if __name__ == "__main__":
                     n_quantiles=N_QUANTILES,
                     adapt_lr={"type": "ratio_2", "factor": factor_1},
                     adapt_temp={"type": "epistemic", "factor": factor_2},
+                    learning_rate=None,
+                    temperature=None,
+                    init_range=(-1, 1),
+                    scalar_log_spec=[],
+                )
+                for _ in range(NUM_SEEDS)
+            ]
+            agents[f"qr_adapt_lr_{factor_1}_temp_{factor_2}_min"] = [
+                QR(
+                    num_arms=NUM_ARMS,
+                    rho=1.0,
+                    gamma=gamma,
+                    ucb=False,
+                    n_quantiles=N_QUANTILES,
+                    adapt_lr={"type": "ratio_2", "factor": factor_1},
+                    adapt_temp={"type": "min_epistemic", "factor": factor_2},
+                    learning_rate=None,
+                    temperature=None,
+                    init_range=(-1, 1),
+                    scalar_log_spec=[],
+                )
+                for _ in range(NUM_SEEDS)
+            ]
+            agents[f"qr_adapt_lr_{factor_1}_temp_{factor_2}_max"] = [
+                QR(
+                    num_arms=NUM_ARMS,
+                    rho=1.0,
+                    gamma=gamma,
+                    ucb=False,
+                    n_quantiles=N_QUANTILES,
+                    adapt_lr={"type": "ratio_2", "factor": factor_1},
+                    adapt_temp={"type": "max_epistemic", "factor": factor_2},
+                    learning_rate=None,
+                    temperature=None,
+                    init_range=(-1, 1),
+                    scalar_log_spec=[],
+                )
+                for _ in range(NUM_SEEDS)
+            ]
+            agents[f"qr_adapt_lr_{factor_1}_temp_{factor_2}_ucb"] = [
+                QR(
+                    num_arms=NUM_ARMS,
+                    rho=1.0,
+                    gamma=gamma,
+                    ucb=False,
+                    n_quantiles=N_QUANTILES,
+                    adapt_lr={"type": "ratio_2", "factor": factor_1},
+                    adapt_temp={"type": "epistemic_per_arm_bonus", "factor": factor_2},
                     learning_rate=None,
                     temperature=None,
                     init_range=(-1, 1),

@@ -1012,9 +1012,6 @@ def train(
 
                 means, vars = agent.predict_bandits()
 
-                min_uncertainty_log[i, episode, trial] = None
-                max_uncertainty_log[i, episode, trial] = None
-
                 if bernoulli:
                     moment_error_log[i, episode, trial, 0] = (
                         dist_hist_log[episode] - means

@@ -1004,10 +1004,14 @@ def train(
         "policy": policy_log,
         "temperature": temperature_log,
         "learning_rate": learning_rate_log,
+        "epistemic_uncertainty": epistemic_uncertainty_log,
+        "aleatoric_uncertainty": aleatoric_uncertainty_log,
         "best_arms": best_arms,
         "correct_arm": correct_arm_log,
         "scalar_logs": scalar_logs,
         "moment_error": moment_error_log,
+        "agent_order": agent_order,
+        "dists": dists,
     }
     np.savez(os.path.join(RESULTS_PATH, f"seed_{seed}.npz"), data)
 

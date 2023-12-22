@@ -409,7 +409,7 @@ class QR(TDMAB):
         epistemic = self.epistemic_uncertainty(arm)
         aleatoric = self._q_distr[arm].var()
 
-        all_epistemics = [self.epistemic_uncertainty(a) for a in self._num_arms]
+        all_epistemics = [self.epistemic_uncertainty(a) for a in range(self._num_arms)]
         min_epistemics = np.min(all_epistemics)
         argmin_epistemics = np.argmin(all_epistemics)
         max_epistemics = np.max(all_epistemics)

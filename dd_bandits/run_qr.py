@@ -409,6 +409,13 @@ class QR(TDMAB):
         epistemic = self.epistemic_uncertainty(arm)
         aleatoric = self._q_distr[arm].var()
 
+        all_epistemics = [self.epistemic_uncertainty(a) for a in self._num_arms]
+        min_epistemics = np.min(all_epistemics)
+        argmin_epistemics = np.argmin(all_epistemics)
+        max_epistemics = np.max(all_epistemics)
+        argmax_epistemics = np.argmax(all_epistemics)
+        mean_epistemic = np.mean(all_epistemics)
+
         if self._adapt_lr is None:
             pass
         elif self._adapt_lr["type"] == "ratio":
@@ -424,7 +431,17 @@ class QR(TDMAB):
         reward = torch.tensor(reward, dtype=self.dtype, requires_grad=False)[None, None]
         loss = self._ineq_estimator[arm].update(reward, quantiles)
 
-        return epistemic, aleatoric, self._learning_rate, self._temperature
+        return (
+            epistemic,
+            aleatoric,
+            self._learning_rate,
+            self._temperature,
+            min_epistemics,
+            argmin_epistemics,
+            max_epistemics,
+            argmax_epistemics,
+            mean_epistemic,
+        )
 
     def scalar_log(self):
         log = {}
@@ -857,6 +874,10 @@ def _setup_data_log(agents, num_episodes, change_frequency, bernoulli, num_arms)
     epistemic_uncertainty = np.zeros(scalar_data_shape)
     aleatoric_uncertainty = np.zeros(scalar_data_shape)
     min_uncertainty = np.zeros(scalar_data_shape)
+    argmin_uncertainty = np.zeros(scalar_data_shape)
+    max_uncertainty = np.zeros(scalar_data_shape)
+    argmax_uncertainty = np.zeros(scalar_data_shape)
+    mean_uncertainty = np.zeros(scalar_data_shape)
     actions = np.zeros(scalar_data_shape)
     policy = np.zeros(scalar_data_shape + (num_arms,))
     moment_error = np.zeros(
@@ -888,6 +909,10 @@ def _setup_data_log(agents, num_episodes, change_frequency, bernoulli, num_arms)
         epistemic_uncertainty,
         aleatoric_uncertainty,
         min_uncertainty,
+        argmin_uncertainty,
+        max_uncertainty,
+        argmax_uncertainty,
+        mean_uncertainty,
         actions,
         policy,
         moment_error,
@@ -915,6 +940,10 @@ def train(
         epistemic_uncertainty_log,
         aleatoric_uncertainty_log,
         min_uncertainty_log,
+        argmin_uncertainty_log,
+        max_uncertainty_log,
+        argmax_uncertainty_log,
+        mean_uncertainty_log,
         actions_log,
         policy_log,
         moment_error_log,
@@ -957,27 +986,34 @@ def train(
                 )
                 correct_arm_log[i, episode, trial] = best_arm == action
 
-                epi, ale, lr, temp = agent.update(action, arm_sample)
+                (
+                    epi,
+                    ale,
+                    lr,
+                    temp,
+                    min_epi,
+                    argmin_epi,
+                    max_epi,
+                    argmax_epi,
+                    mean_epi,
+                ) = agent.update(action, arm_sample)
 
                 learning_rate_log[i, episode, trial] = lr
                 temperature_log[i, episode, trial] = temp
                 actions_log[i, episode, trial] = action
                 policy_log[i, episode, trial] = agent.policy()
                 epistemic_uncertainty_log[i, episode, trial] = epi
+                min_uncertainty_log[i, episode, trial] = min_epi
+                argmin_uncertainty_log[i, episode, trial] = argmin_epi
+                max_uncertainty_log[i, episode, trial] = max_epi
+                argmax_uncertainty_log[i, episode, trial] = argmax_epi
+                mean_uncertainty_log[i, episode, trial] = mean_epi
                 aleatoric_uncertainty_log[i, episode, trial] = ale
 
                 means, vars = agent.predict_bandits()
 
-                # self._min_uncertainty[
-                #     i, seed, episode, trial
-                # ] = agent.min_epistemic_uncertainty
-                # self._aleatoric_uncertainty[
-                #     i, seed, episode, trial
-                # ] = agent.aleatoric_uncertainty
-                # self._epistemic_uncertainty[
-                #     i, seed, episode, trial
-                # ] = agent.epistemic_uncertainty
-                # actions[i, episode, trial]
+                min_uncertainty_log[i, episode, trial] = None
+                max_uncertainty_log[i, episode, trial] = None
 
                 if bernoulli:
                     moment_error_log[i, episode, trial, 0] = (
@@ -1006,6 +1042,11 @@ def train(
         "learning_rate": learning_rate_log,
         "epistemic_uncertainty": epistemic_uncertainty_log,
         "aleatoric_uncertainty": aleatoric_uncertainty_log,
+        "min_uncertainty": min_uncertainty_log,
+        "argmin_uncertainty": argmin_uncertainty_log,
+        "max_uncertainty": max_uncertainty_log,
+        "argmax_uncertainty": argmax_uncertainty_log,
+        "mean_uncertainty": mean_uncertainty_log,
         "best_arms": best_arms,
         "correct_arm": correct_arm_log,
         "scalar_logs": scalar_logs,

@@ -1099,7 +1099,7 @@ if __name__ == "__main__":
             ]
 
         for temperature in [0.1, 1, 5, 10]:
-            agents[f"qr_{lr}_{gamma}_{temperature}"] = [
+            agents[f"qr_{lr}_{temperature}"] = [
                 QR(
                     num_arms=NUM_ARMS,
                     rho=1.0,

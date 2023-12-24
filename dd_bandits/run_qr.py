@@ -1061,7 +1061,7 @@ def train(
         "scalar_logs": scalar_logs,
         "moment_error": moment_error_log,
         "agent_order": agent_order,
-        "dists": dists,
+        "dists": dist_hist_log,
     }
     np.savez(os.path.join(RESULTS_PATH, f"seed_{seed}.npz"), data)
 
@@ -1079,8 +1079,8 @@ if __name__ == "__main__":
     )
 
     agents = {}
-    for lr in [0.05]:
-        for gamma in [0.9999]:
+    for lr in [0.5, 0.25, 0.1, 0.01, 0.001]:
+        for gamma in [0.99, 0.999, 0.9999]:
             agents[f"ducb_{lr}_{gamma}"] = [
                 QR(
                     num_arms=NUM_ARMS,
@@ -1098,123 +1098,123 @@ if __name__ == "__main__":
                 for _ in range(NUM_SEEDS)
             ]
 
-            for temperature in [10]:
-                agents[f"qr_{lr}_{gamma}_{temperature}"] = [
-                    QR(
-                        num_arms=NUM_ARMS,
-                        rho=1.0,
-                        gamma=gamma,
-                        ucb=False,
-                        n_quantiles=N_QUANTILES,
-                        adapt_lr=None,
-                        adapt_temp=None,
-                        learning_rate=lr,
-                        temperature=temperature,
-                        init_range=(-1, 1),
-                        scalar_log_spec=[],
-                    )
-                    for _ in range(NUM_SEEDS)
-                ]
-
-    for factor_1 in [1, 10, 100]:
-        for factor_2 in [1, 10, 100]:
-            agents[f"qr_adapt_lr_{factor_1}_temp_{factor_2}"] = [
+        for temperature in [0.1, 1, 5, 10]:
+            agents[f"qr_{lr}_{gamma}_{temperature}"] = [
                 QR(
                     num_arms=NUM_ARMS,
                     rho=1.0,
-                    gamma=gamma,
+                    gamma=1.0,
                     ucb=False,
                     n_quantiles=N_QUANTILES,
-                    adapt_lr={"type": "ratio_2", "factor": factor_1},
-                    adapt_temp={"type": "epistemic", "factor": factor_2},
-                    learning_rate=None,
-                    temperature=None,
-                    init_range=(-1, 1),
-                    scalar_log_spec=[],
-                )
-                for _ in range(NUM_SEEDS)
-            ]
-            agents[f"qr_adapt_lr_{factor_1}_temp_{factor_2}_min"] = [
-                QR(
-                    num_arms=NUM_ARMS,
-                    rho=1.0,
-                    gamma=gamma,
-                    ucb=False,
-                    n_quantiles=N_QUANTILES,
-                    adapt_lr={"type": "ratio_2", "factor": factor_1},
-                    adapt_temp={"type": "min_epistemic", "factor": factor_2},
-                    learning_rate=None,
-                    temperature=None,
-                    init_range=(-1, 1),
-                    scalar_log_spec=[],
-                )
-                for _ in range(NUM_SEEDS)
-            ]
-            agents[f"qr_adapt_lr_{factor_1}_temp_{factor_2}_max"] = [
-                QR(
-                    num_arms=NUM_ARMS,
-                    rho=1.0,
-                    gamma=gamma,
-                    ucb=False,
-                    n_quantiles=N_QUANTILES,
-                    adapt_lr={"type": "ratio_2", "factor": factor_1},
-                    adapt_temp={"type": "max_epistemic", "factor": factor_2},
-                    learning_rate=None,
-                    temperature=None,
-                    init_range=(-1, 1),
-                    scalar_log_spec=[],
-                )
-                for _ in range(NUM_SEEDS)
-            ]
-            agents[f"qr_adapt_lr_{factor_1}_temp_{factor_2}_ucb"] = [
-                QR(
-                    num_arms=NUM_ARMS,
-                    rho=1.0,
-                    gamma=gamma,
-                    ucb=False,
-                    n_quantiles=N_QUANTILES,
-                    adapt_lr={"type": "ratio_2", "factor": factor_1},
-                    adapt_temp={"type": "epistemic_per_arm_bonus", "factor": factor_2},
-                    learning_rate=None,
-                    temperature=None,
+                    adapt_lr=None,
+                    adapt_temp=None,
+                    learning_rate=lr,
+                    temperature=temperature,
                     init_range=(-1, 1),
                     scalar_log_spec=[],
                 )
                 for _ in range(NUM_SEEDS)
             ]
 
-    agents["qr_adapt_lr"] = [
-        QR(
-            num_arms=NUM_ARMS,
-            rho=1.0,
-            gamma=gamma,
-            ucb=False,
-            n_quantiles=N_QUANTILES,
-            adapt_lr={"type": "ratio"},
-            adapt_temp=None,
-            learning_rate=None,
-            temperature=temperature,
-            init_range=(-1, 1),
-            scalar_log_spec=[],
-        )
-        for _ in range(NUM_SEEDS)
-    ]
-    agents["qr_adapt_lr_2"] = [
-        QR(
-            num_arms=NUM_ARMS,
-            rho=1.0,
-            gamma=gamma,
-            ucb=False,
-            n_quantiles=N_QUANTILES,
-            adapt_lr={"type": "ratio_2"},
-            adapt_temp=None,
-            learning_rate=None,
-            temperature=temperature,
-            init_range=(-1, 1),
-            scalar_log_spec=[],
-        )
-        for _ in range(NUM_SEEDS)
-    ]
+    # for factor_1 in [1, 10, 100]:
+    #     agents[f"qr_adapt_lr_{factor_1}"] = [
+    #         QR(
+    #             num_arms=NUM_ARMS,
+    #             rho=1.0,
+    #             gamma=gamma,
+    #             ucb=False,
+    #             n_quantiles=N_QUANTILES,
+    #             adapt_lr={"type": "ratio", "factor": factor_1},
+    #             adapt_temp=None,
+    #             learning_rate=None,
+    #             temperature=temperature,
+    #             init_range=(-1, 1),
+    #             scalar_log_spec=[],
+    #         )
+    #         for _ in range(NUM_SEEDS)
+    #     ]
+    #     agents[f"qr_adapt_lr2_{factor_1}"] = [
+    #         QR(
+    #             num_arms=NUM_ARMS,
+    #             rho=1.0,
+    #             gamma=gamma,
+    #             ucb=False,
+    #             n_quantiles=N_QUANTILES,
+    #             adapt_lr={"type": "ratio_2", "factor": factor_1},
+    #             adapt_temp=None,
+    #             learning_rate=None,
+    #             temperature=temperature,
+    #             init_range=(-1, 1),
+    #             scalar_log_spec=[],
+    #         )
+    #         for _ in range(NUM_SEEDS)
+    #     ]
+    #     for factor_2 in [1, 10, 100]:
+    #         agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}"] = [
+    #             QR(
+    #                 num_arms=NUM_ARMS,
+    #                 rho=1.0,
+    #                 gamma=gamma,
+    #                 ucb=False,
+    #                 n_quantiles=N_QUANTILES,
+    #                 adapt_lr={"type": "ratio_2", "factor": factor_1},
+    #                 adapt_temp={"type": "epistemic", "factor": factor_2},
+    #                 learning_rate=None,
+    #                 temperature=None,
+    #                 init_range=(-1, 1),
+    #                 scalar_log_spec=[],
+    #             )
+    #             for _ in range(NUM_SEEDS)
+    #         ]
+    #         agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}_min"] = [
+    #             QR(
+    #                 num_arms=NUM_ARMS,
+    #                 rho=1.0,
+    #                 gamma=gamma,
+    #                 ucb=False,
+    #                 n_quantiles=N_QUANTILES,
+    #                 adapt_lr={"type": "ratio_2", "factor": factor_1},
+    #                 adapt_temp={"type": "min_epistemic", "factor": factor_2},
+    #                 learning_rate=None,
+    #                 temperature=None,
+    #                 init_range=(-1, 1),
+    #                 scalar_log_spec=[],
+    #             )
+    #             for _ in range(NUM_SEEDS)
+    #         ]
+    #         agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}_max"] = [
+    #             QR(
+    #                 num_arms=NUM_ARMS,
+    #                 rho=1.0,
+    #                 gamma=gamma,
+    #                 ucb=False,
+    #                 n_quantiles=N_QUANTILES,
+    #                 adapt_lr={"type": "ratio_2", "factor": factor_1},
+    #                 adapt_temp={"type": "max_epistemic", "factor": factor_2},
+    #                 learning_rate=None,
+    #                 temperature=None,
+    #                 init_range=(-1, 1),
+    #                 scalar_log_spec=[],
+    #             )
+    #             for _ in range(NUM_SEEDS)
+    #         ]
+    #         agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}_ucb"] = [
+    #             QR(
+    #                 num_arms=NUM_ARMS,
+    #                 rho=1.0,
+    #                 gamma=gamma,
+    #                 ucb=False,
+    #                 n_quantiles=N_QUANTILES,
+    #                 adapt_lr={"type": "ratio_2", "factor": factor_1},
+    #                 adapt_temp={"type": "epistemic_per_arm_bonus", "factor": factor_2},
+    #                 learning_rate=None,
+    #                 temperature=None,
+    #                 init_range=(-1, 1),
+    #                 scalar_log_spec=[],
+    #             )
+    #             for _ in range(NUM_SEEDS)
+    #         ]
+
     # agents["qr_adapt_temp"] = [
     #     QR(
     #         num_arms=NUM_ARMS,
@@ -1311,54 +1311,54 @@ if __name__ == "__main__":
     #     )
     #     for _ in range(NUM_SEEDS)
     # ]
-    agents["qr_adapt_temp_100"] = [
-        QR(
-            num_arms=NUM_ARMS,
-            rho=1.0,
-            gamma=gamma,
-            ucb=False,
-            n_quantiles=N_QUANTILES,
-            adapt_lr=None,
-            adapt_temp={"type": "epistemic", "factor": 100},
-            learning_rate=lr,
-            temperature=None,
-            init_range=(-1, 1),
-            scalar_log_spec=[],
-        )
-        for _ in range(NUM_SEEDS)
-    ]
-    agents["qr_adapt_temp_lr_100"] = [
-        QR(
-            num_arms=NUM_ARMS,
-            rho=1.0,
-            gamma=gamma,
-            ucb=False,
-            n_quantiles=N_QUANTILES,
-            adapt_lr={"type": "ratio"},
-            adapt_temp={"type": "epistemic", "factor": 100},
-            learning_rate=None,
-            temperature=None,
-            init_range=(-1, 1),
-            scalar_log_spec=[],
-        )
-        for _ in range(NUM_SEEDS)
-    ]
-    agents["qr_adapt_temp_lr2_100"] = [
-        QR(
-            num_arms=NUM_ARMS,
-            rho=1.0,
-            gamma=gamma,
-            ucb=False,
-            n_quantiles=N_QUANTILES,
-            adapt_lr={"type": "ratio_2"},
-            adapt_temp={"type": "epistemic", "factor": 100},
-            learning_rate=None,
-            temperature=None,
-            init_range=(-1, 1),
-            scalar_log_spec=[],
-        )
-        for _ in range(NUM_SEEDS)
-    ]
+    # agents["qr_adapt_temp_100"] = [
+    #     QR(
+    #         num_arms=NUM_ARMS,
+    #         rho=1.0,
+    #         gamma=gamma,
+    #         ucb=False,
+    #         n_quantiles=N_QUANTILES,
+    #         adapt_lr=None,
+    #         adapt_temp={"type": "epistemic", "factor": 100},
+    #         learning_rate=lr,
+    #         temperature=None,
+    #         init_range=(-1, 1),
+    #         scalar_log_spec=[],
+    #     )
+    #     for _ in range(NUM_SEEDS)
+    # ]
+    # agents["qr_adapt_temp_lr_100"] = [
+    #     QR(
+    #         num_arms=NUM_ARMS,
+    #         rho=1.0,
+    #         gamma=gamma,
+    #         ucb=False,
+    #         n_quantiles=N_QUANTILES,
+    #         adapt_lr={"type": "ratio"},
+    #         adapt_temp={"type": "epistemic", "factor": 100},
+    #         learning_rate=None,
+    #         temperature=None,
+    #         init_range=(-1, 1),
+    #         scalar_log_spec=[],
+    #     )
+    #     for _ in range(NUM_SEEDS)
+    # ]
+    # agents["qr_adapt_temp_lr2_100"] = [
+    #     QR(
+    #         num_arms=NUM_ARMS,
+    #         rho=1.0,
+    #         gamma=gamma,
+    #         ucb=False,
+    #         n_quantiles=N_QUANTILES,
+    #         adapt_lr={"type": "ratio_2"},
+    #         adapt_temp={"type": "epistemic", "factor": 100},
+    #         learning_rate=None,
+    #         temperature=None,
+    #         init_range=(-1, 1),
+    #         scalar_log_spec=[],
+    #     )
+    #     for _ in range(NUM_SEEDS)
+    # ]
 
     seed_runs = []
 

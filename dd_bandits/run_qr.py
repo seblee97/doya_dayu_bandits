@@ -388,8 +388,12 @@ class QR(TDMAB):
                         bonus_values[arm] = self.epistemic_uncertainty(arm)
                 action = (values + factor * bonus_values).argmax()
                 return action
-            exp_values = np.exp(self._temperature * values)
-            softmax_values = exp_values / np.sum(exp_values)
+            # logsumexp
+            max_val = max(values)
+            scaled_vals = values - max_val
+            logits = np.exp(values - (max_val + np.log(np.exp(scaled_vals).sum())))
+
+            softmax_values = logits / np.sum(logits)
 
             action = np.random.choice(range(self._num_arms), p=softmax_values)
 

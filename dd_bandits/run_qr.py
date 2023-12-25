@@ -208,8 +208,8 @@ class DiscountedUCB(TDMAB):
             self._num_arms
         )  # np.log(self._step) / (self._step_arm + 1.0)
 
-    def policy(self):
-        return np.eye(self._num_arms)[self.play()]
+    def policy(self, ep):
+        return np.eye(self._num_arms)[self.play(ep)]
 
     def play(self):
         # ensure all arms are played at least once initially.
@@ -292,6 +292,7 @@ class QR(TDMAB):
         rho,
         init_range,
         scalar_log_spec: List[str],
+        true_dists,
         rng=None,
     ):
         self._learning_rate = learning_rate
@@ -304,6 +305,7 @@ class QR(TDMAB):
         self.dtype = torch.float64
 
         self._scalar_log_spec = scalar_log_spec
+        self._true_dists = true_dists
 
         self._n_quantiles = n_quantiles
         self._init_range = init_range
@@ -339,10 +341,10 @@ class QR(TDMAB):
             dist.var() for dist in self._q_distr
         ]
 
-    def policy(self):
-        return np.eye(self._num_arms)[self.play()]
+    def policy(self, ep):
+        return np.eye(self._num_arms)[self.play(ep)]
 
-    def play(self):
+    def play(self, ep):
         # ensure all arms are played at least once initially.
         if not self._arm_seen.all():
             return self._arm_seen.argmin()
@@ -365,6 +367,14 @@ class QR(TDMAB):
         else:
             if self._adapt_temp is None:
                 pass
+            elif self._adapt_temp["type"] == "oracle_epistemic":
+                factor = self._adapt_temp.get("factor", 1)
+                self._temperature = factor / np.mean(
+                    [
+                        (self._q_distr[a].mean() - self._true_dists[ep][a].mean()) ** 2
+                        for a in range(self._num_arms)
+                    ]
+                )
             elif self._adapt_temp["type"] == "min_epistemic":
                 factor = self._adapt_temp.get("factor", 1)
                 self._temperature = factor / np.min(
@@ -413,7 +423,7 @@ class QR(TDMAB):
 
         return epistemic
 
-    def update(self, arm, reward):
+    def update(self, arm, reward, ep):
         self._arm_seen[arm] = True
         self._step *= self._gamma
         self._step_arm[arm] *= self._gamma
@@ -432,6 +442,24 @@ class QR(TDMAB):
 
         if self._adapt_lr is None:
             pass
+        elif self._adapt_lr["type"] == "oracle_epistemic_ratio":
+            factor = self._adapt_lr.get("factor", 1)
+            oracle_epistemic = (
+                self._q_distr[arm].mean() - self._true_dists[ep][arm].mean()
+            ) ** 2
+            oracle_aleatoric = self._true_dists[ep][arm].var()
+            self._learning_rate = (
+                factor * oracle_epistemic / (oracle_epistemic + oracle_aleatoric)
+            )
+        elif self._adapt_lr["type"] == "oracle_epistemic_ratio_2":
+            factor = self._adapt_lr.get("factor", 1)
+            oracle_epistemic = (
+                self._q_distr[arm].mean() - self._true_dists[ep][arm].mean()
+            ) ** 2
+            oracle_aleatoric = self._true_dists[ep][arm].var()
+            self._learning_rate = (
+                factor * oracle_epistemic**2 / (oracle_epistemic + oracle_aleatoric)
+            )
         elif self._adapt_lr["type"] == "ratio":
             factor = self._adapt_lr.get("factor", 1)
             self._learning_rate = factor * epistemic / (epistemic + aleatoric)
@@ -445,7 +473,9 @@ class QR(TDMAB):
         )[:, None]
 
         reward = torch.tensor(reward, dtype=self.dtype, requires_grad=False)[None, None]
-        loss = self._ineq_estimator[arm].update(reward, quantiles)
+        loss = self._ineq_estimator[arm].update(
+            reward, quantiles, lr=self._learning_rate
+        )
 
         return (
             epistemic,
@@ -457,6 +487,7 @@ class QR(TDMAB):
             max_epistemics,
             argmax_epistemics,
             mean_epistemic,
+            loss,
         )
 
     def scalar_log(self):
@@ -527,10 +558,11 @@ class QRTD(object):
 
 
 class InequalityEstimator(object):
-    def __init__(self, n_quantiles=21, learning_rate=0.01):
+    DEFAULT_LR = 1
+
+    def __init__(self, n_quantiles):
         self.dtype = torch.float64
         self.n_quantiles = n_quantiles
-        self.lr = learning_rate
         self.weights = torch.tensor(
             np.random.normal(size=(self.n_quantiles, 1)),
             dtype=self.dtype,
@@ -541,7 +573,9 @@ class InequalityEstimator(object):
             dtype=self.dtype,
             requires_grad=True,
         )
-        self.optimizer = torch.optim.Adam([self.weights, self.offsets], lr=self.lr)
+        self.optimizer = torch.optim.Adam(
+            [self.weights, self.offsets], lr=InequalityEstimator.DEFAULT_LR
+        )
 
     def forward(self):
         # Make sample_val.shape = (1, 1), and (batch, 1, 1) for broadcasting
@@ -558,7 +592,7 @@ class InequalityEstimator(object):
         )
         return -torch.mean(loss)
 
-    def update(self, sample_val, quantiles, lr=None):
+    def update(self, sample_val, quantiles, lr):
         if lr is not None:
             for g in self.optimizer.param_groups:
                 g["lr"] = lr
@@ -894,6 +928,7 @@ def _setup_data_log(agents, num_episodes, change_frequency, bernoulli, num_arms)
     max_uncertainty = np.zeros(scalar_data_shape)
     argmax_uncertainty = np.zeros(scalar_data_shape)
     mean_uncertainty = np.zeros(scalar_data_shape)
+    classifier_loss_log = np.zeros(scalar_data_shape)
     actions = np.zeros(scalar_data_shape)
     policy = np.zeros(scalar_data_shape + (num_arms,))
     moment_error = np.zeros(
@@ -929,6 +964,7 @@ def _setup_data_log(agents, num_episodes, change_frequency, bernoulli, num_arms)
         max_uncertainty,
         argmax_uncertainty,
         mean_uncertainty,
+        classifier_loss_log,
         actions,
         policy,
         moment_error,
@@ -960,6 +996,7 @@ def train(
         max_uncertainty_log,
         argmax_uncertainty_log,
         mean_uncertainty_log,
+        classifier_loss_log,
         actions_log,
         policy_log,
         moment_error_log,
@@ -993,7 +1030,7 @@ def train(
                 pass
 
             for trial in range(change_frequency):
-                action = agent.play()
+                action = agent.play(episode)
                 arm_sample = dist[action].rvs(random_state=rng)
 
                 emp_regret_log[i, episode, trial] = dist[best_arm].mean() - arm_sample
@@ -1012,12 +1049,13 @@ def train(
                     max_epi,
                     argmax_epi,
                     mean_epi,
-                ) = agent.update(action, arm_sample)
+                    c_loss,
+                ) = agent.update(action, arm_sample, episode)
 
                 learning_rate_log[i, episode, trial] = lr
                 temperature_log[i, episode, trial] = temp
                 actions_log[i, episode, trial] = action
-                policy_log[i, episode, trial] = agent.policy()
+                policy_log[i, episode, trial] = agent.policy(episode)
                 epistemic_uncertainty_log[i, episode, trial] = epi
                 min_uncertainty_log[i, episode, trial] = min_epi
                 argmin_uncertainty_log[i, episode, trial] = argmin_epi
@@ -1025,6 +1063,7 @@ def train(
                 argmax_uncertainty_log[i, episode, trial] = argmax_epi
                 mean_uncertainty_log[i, episode, trial] = mean_epi
                 aleatoric_uncertainty_log[i, episode, trial] = ale
+                classifier_loss_log[i, episode, trial] = c_loss
 
                 means, vars = agent.predict_bandits()
 
@@ -1060,6 +1099,7 @@ def train(
         "max_uncertainty": max_uncertainty_log,
         "argmax_uncertainty": argmax_uncertainty_log,
         "mean_uncertainty": mean_uncertainty_log,
+        "classifier_loss": classifier_loss_log,
         "best_arms": best_arms,
         "correct_arm": correct_arm_log,
         "scalar_logs": scalar_logs,
@@ -1166,9 +1206,10 @@ if __name__ == "__main__":
                     learning_rate=None,
                     temperature=None,
                     init_range=(-1, 1),
+                    true_dists=dists[d],
                     scalar_log_spec=[],
                 )
-                for _ in range(NUM_SEEDS)
+                for d in range(NUM_SEEDS)
             ]
             # agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}_min"] = [
             #     QR(
@@ -1365,6 +1406,25 @@ if __name__ == "__main__":
     # ]
 
     seed_runs = []
+
+    # agents = {}
+    # agents["test"] = [
+    #     QR(
+    #         num_arms=NUM_ARMS,
+    #         rho=1.0,
+    #         gamma=1,
+    #         ucb=False,
+    #         n_quantiles=N_QUANTILES,
+    #         adapt_lr={"type": "oracle_epistemic_ratio", "factor": 100},
+    #         adapt_temp={"type": "oracle_epistemic", "factor": 100},
+    #         learning_rate=None,
+    #         temperature=None,
+    #         init_range=(-1, 1),
+    #         true_dists=dists[d],
+    #         scalar_log_spec=[],
+    #     )
+    #     for d in range(NUM_SEEDS)
+    # ]
 
     # train(
     #     0,

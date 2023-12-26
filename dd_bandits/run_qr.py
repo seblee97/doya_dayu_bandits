@@ -1220,6 +1220,40 @@ if __name__ == "__main__":
                 )
                 for d in range(NUM_SEEDS)
             ]
+            # agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}"] = [
+            #     QR(
+            #         num_arms=NUM_ARMS,
+            #         rho=1.0,
+            #         gamma=1,
+            #         ucb=False,
+            #         n_quantiles=N_QUANTILES,
+            #         adapt_lr={"type": "epistemic_ratio_2", "factor": factor_1},
+            #         adapt_temp={"type": "epistemic", "factor": factor_2},
+            #         learning_rate=None,
+            #         temperature=None,
+            #         init_range=(-1, 1),
+            #         true_dists=dists[d],
+            #         scalar_log_spec=[],
+            #     )
+            #     for d in range(NUM_SEEDS)
+            # ]
+            # agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}"] = [
+            #     QR(
+            #         num_arms=NUM_ARMS,
+            #         rho=1.0,
+            #         gamma=1,
+            #         ucb=False,
+            #         n_quantiles=N_QUANTILES,
+            #         adapt_lr={"type": "epistemic_ratio_2", "factor": factor_1},
+            #         adapt_temp={"type": "epistemic_ratio", "factor": factor_2},
+            #         learning_rate=None,
+            #         temperature=None,
+            #         init_range=(-1, 1),
+            #         true_dists=dists[d],
+            #         scalar_log_spec=[],
+            #     )
+            #     for d in range(NUM_SEEDS)
+            # ]
             # agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}_min"] = [
             #     QR(
             #         num_arms=NUM_ARMS,

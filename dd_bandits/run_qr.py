@@ -414,7 +414,10 @@ class QR(TDMAB):
             # logsumexp
             max_val = max(values)
             scaled_vals = values - max_val
-            logits = np.exp(values - (max_val + np.log(np.exp(scaled_vals).sum())))
+            logits = np.exp(
+                self._temperature
+                * (values - (max_val + np.log(np.exp(scaled_vals).sum())))
+            )
 
             softmax_values = logits / np.sum(logits)
 

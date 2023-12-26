@@ -369,7 +369,7 @@ class QR(TDMAB):
                 pass
             elif self._adapt_temp["type"] == "oracle_epistemic":
                 factor = self._adapt_temp.get("factor", 1)
-                self._temperature = factor / np.mean(
+                self._temperature = factor * np.mean(
                     [
                         (self._q_distr[a].mean() - self._true_dists[ep][a].mean()) ** 2
                         for a in range(self._num_arms)
@@ -377,19 +377,28 @@ class QR(TDMAB):
                 )
             elif self._adapt_temp["type"] == "min_epistemic":
                 factor = self._adapt_temp.get("factor", 1)
-                self._temperature = factor / np.min(
+                self._temperature = factor * np.min(
                     [self.epistemic_uncertainty(arm) for arm in range(self._num_arms)]
                 )
             elif self._adapt_temp["type"] == "max_epistemic":
                 factor = self._adapt_temp.get("factor", 1)
-                self._temperature = factor / np.max(
+                self._temperature = factor * np.max(
                     [self.epistemic_uncertainty(arm) for arm in range(self._num_arms)]
                 )
             elif self._adapt_temp["type"] == "epistemic":
                 factor = self._adapt_temp.get("factor", 1)
-                self._temperature = factor / np.mean(
+                self._temperature = factor * np.mean(
                     [self.epistemic_uncertainty(arm) for arm in range(self._num_arms)]
                 )
+            elif self._adapt_temp["type"] == "epistemic_ratio":
+                factor = self._adapt_temp.get("factor", 1)
+                epistemic = np.mean(
+                    [self.epistemic_uncertainty(arm) for arm in range(self._num_arms)]
+                )
+                aleatoric = np.mean(
+                    [self._q_distr[a].var() for a in range(self._num_arms)]
+                )
+                self._temperature = factor * epistemic / (epistemic + aleatoric)
             elif self._adapt_temp["type"] == "epistemic_per_arm_bonus":
                 factor = self._adapt_temp.get("factor", 1)
                 bonus_values = np.zeros(self._num_arms)

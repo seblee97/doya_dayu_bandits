@@ -369,11 +369,15 @@ class QR(TDMAB):
                 pass
             elif self._adapt_temp["type"] == "oracle_epistemic":
                 factor = self._adapt_temp.get("factor", 1)
-                self._temperature = factor * np.mean(
-                    [
-                        (self._q_distr[a].mean() - self._true_dists[ep][a].mean()) ** 2
-                        for a in range(self._num_arms)
-                    ]
+                self._temperature = factor / (
+                    np.mean(
+                        [
+                            (self._q_distr[a].mean() - self._true_dists[ep][a].mean())
+                            ** 2
+                            for a in range(self._num_arms)
+                        ]
+                    )
+                    + 0.0001
                 )
             elif self._adapt_temp["type"] == "min_epistemic":
                 factor = self._adapt_temp.get("factor", 1)

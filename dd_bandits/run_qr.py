@@ -391,7 +391,7 @@ class QR(TDMAB):
                 )
             elif self._adapt_temp["type"] == "epistemic":
                 factor = self._adapt_temp.get("factor", 1)
-                self._temperature = factor * np.mean(
+                self._temperature = factor / np.mean(
                     [self.epistemic_uncertainty(arm) for arm in range(self._num_arms)]
                 )
             elif self._adapt_temp["type"] == "epistemic_ratio":
@@ -1176,7 +1176,7 @@ if __name__ == "__main__":
     #             for _ in range(NUM_SEEDS)
     #         ]
 
-    for factor_1 in [0.1, 0.5, 1, 5, 10, 25, 50, 100]:
+    for factor_1 in [0.1, 0.5, 1]:
         # agents[f"qr_adapt_lr_{factor_1}"] = [
         #     QR(
         #         num_arms=NUM_ARMS,
@@ -1227,23 +1227,23 @@ if __name__ == "__main__":
                 )
                 for d in range(NUM_SEEDS)
             ]
-            # agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}"] = [
-            #     QR(
-            #         num_arms=NUM_ARMS,
-            #         rho=1.0,
-            #         gamma=1,
-            #         ucb=False,
-            #         n_quantiles=N_QUANTILES,
-            #         adapt_lr={"type": "epistemic_ratio_2", "factor": factor_1},
-            #         adapt_temp={"type": "epistemic", "factor": factor_2},
-            #         learning_rate=None,
-            #         temperature=None,
-            #         init_range=(-1, 1),
-            #         true_dists=dists[d],
-            #         scalar_log_spec=[],
-            #     )
-            #     for d in range(NUM_SEEDS)
-            # ]
+            agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}"] = [
+                QR(
+                    num_arms=NUM_ARMS,
+                    rho=1.0,
+                    gamma=1,
+                    ucb=False,
+                    n_quantiles=N_QUANTILES,
+                    adapt_lr={"type": "epistemic_ratio_2", "factor": factor_1},
+                    adapt_temp={"type": "epistemic", "factor": factor_2},
+                    learning_rate=None,
+                    temperature=None,
+                    init_range=(-1, 1),
+                    true_dists=dists[d],
+                    scalar_log_spec=[],
+                )
+                for d in range(NUM_SEEDS)
+            ]
             # agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}"] = [
             #     QR(
             #         num_arms=NUM_ARMS,

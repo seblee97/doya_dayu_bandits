@@ -18,12 +18,12 @@ from typing import List
 
 
 NUM_SEEDS = 1
-NUM_EPISODES = 1
+NUM_EPISODES = 20
 EPISODE_LENGTH = 5000
-NUM_ARMS = 5
-MEAN_RANGE = [-3, 3]
+NUM_ARMS = 2
+MEAN_RANGE = [-2, 2]
 SCALE_RANGE = [0.01, 1]
-CHANGE_PROBABILITY = 0.4
+CHANGE_PROBABILITY = 0.75
 
 N_QUANTILES = 31
 
@@ -417,6 +417,7 @@ class QR(TDMAB):
             logits = np.exp(
                 self._temperature
                 * (values - (max_val + np.log(np.exp(scaled_vals).sum())))
+                + 0.0001
             )
 
             softmax_values = logits / np.sum(logits)
@@ -827,7 +828,7 @@ class DistributionalAgent(PrioritizedReplayQL):
             updates.append(update)
             self.q_distr[(np.argmax(transition.prev_state), transition.action)].lr = lr
             self.q_distr[(np.argmax(transition.prev_state), transition.action)].update(
-                transition.reward
+                transition.reward,
             )
             h = self.q_distr[(np.argmax(transition.prev_state), transition.action)]
             self.parameters[

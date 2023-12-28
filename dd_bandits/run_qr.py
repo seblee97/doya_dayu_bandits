@@ -449,6 +449,11 @@ class QR(TDMAB):
         epistemic = self.epistemic_uncertainty(arm)
         aleatoric = self._q_distr[arm].var()
 
+        oracle_epistemic = (
+            self._q_distr[arm].mean() - self._true_dists[ep][arm].mean()
+        ) ** 2
+        oracle_aleatoric = self._true_dists[ep][arm].var()
+
         all_epistemics = [self.epistemic_uncertainty(a) for a in range(self._num_arms)]
         min_epistemics = np.min(all_epistemics)
         argmin_epistemics = np.argmin(all_epistemics)
@@ -460,19 +465,11 @@ class QR(TDMAB):
             pass
         elif self._adapt_lr["type"] == "oracle_epistemic_ratio":
             factor = self._adapt_lr.get("factor", 1)
-            oracle_epistemic = (
-                self._q_distr[arm].mean() - self._true_dists[ep][arm].mean()
-            ) ** 2
-            oracle_aleatoric = self._true_dists[ep][arm].var()
             self._learning_rate = (
                 factor * oracle_epistemic / (oracle_epistemic + oracle_aleatoric)
             )
         elif self._adapt_lr["type"] == "oracle_epistemic_ratio_2":
             factor = self._adapt_lr.get("factor", 1)
-            oracle_epistemic = (
-                self._q_distr[arm].mean() - self._true_dists[ep][arm].mean()
-            ) ** 2
-            oracle_aleatoric = self._true_dists[ep][arm].var()
             self._learning_rate = (
                 factor * oracle_epistemic**2 / (oracle_epistemic + oracle_aleatoric)
             )
@@ -496,6 +493,8 @@ class QR(TDMAB):
         return (
             epistemic,
             aleatoric,
+            oracle_epistemic,
+            oracle_aleatoric,
             self._learning_rate,
             self._temperature,
             min_epistemics,
@@ -939,6 +938,8 @@ def _setup_data_log(agents, num_episodes, change_frequency, bernoulli, num_arms)
     temperature = np.zeros(scalar_data_shape)
     epistemic_uncertainty = np.zeros(scalar_data_shape)
     aleatoric_uncertainty = np.zeros(scalar_data_shape)
+    oracle_epistemic_uncertainty = np.zeros(scalar_data_shape)
+    oracle_aleatoric_uncertainty = np.zeros(scalar_data_shape)
     min_uncertainty = np.zeros(scalar_data_shape)
     argmin_uncertainty = np.zeros(scalar_data_shape)
     max_uncertainty = np.zeros(scalar_data_shape)
@@ -975,6 +976,8 @@ def _setup_data_log(agents, num_episodes, change_frequency, bernoulli, num_arms)
         temperature,
         epistemic_uncertainty,
         aleatoric_uncertainty,
+        oracle_epistemic_uncertainty,
+        oracle_aleatoric_uncertainty,
         min_uncertainty,
         argmin_uncertainty,
         max_uncertainty,
@@ -1007,6 +1010,8 @@ def train(
         temperature_log,
         epistemic_uncertainty_log,
         aleatoric_uncertainty_log,
+        oracle_epistemic_uncertainty_log,
+        oracle_aleatoric_uncertainty_log,
         min_uncertainty_log,
         argmin_uncertainty_log,
         max_uncertainty_log,
@@ -1058,6 +1063,8 @@ def train(
                 (
                     epi,
                     ale,
+                    oracle_epi,
+                    oracle_ale,
                     lr,
                     temp,
                     min_epi,
@@ -1073,6 +1080,8 @@ def train(
                 actions_log[i, episode, trial] = action
                 policy_log[i, episode, trial] = agent.policy(episode)
                 epistemic_uncertainty_log[i, episode, trial] = epi
+                oracle_epistemic_uncertainty_log[i, episode, trial] = oracle_epi
+                oracle_aleatoric_uncertainty_log[i, episode, trial] = oracle_ale
                 min_uncertainty_log[i, episode, trial] = min_epi
                 argmin_uncertainty_log[i, episode, trial] = argmin_epi
                 max_uncertainty_log[i, episode, trial] = max_epi
@@ -1110,6 +1119,8 @@ def train(
         "learning_rate": learning_rate_log,
         "epistemic_uncertainty": epistemic_uncertainty_log,
         "aleatoric_uncertainty": aleatoric_uncertainty_log,
+        "oracle_epistemic_uncertainty": oracle_epistemic_uncertainty_log,
+        "oracle_aleatoric_uncertainty": oracle_aleatoric_uncertainty_log,
         "min_uncertainty": min_uncertainty_log,
         "argmin_uncertainty": argmin_uncertainty_log,
         "max_uncertainty": max_uncertainty_log,

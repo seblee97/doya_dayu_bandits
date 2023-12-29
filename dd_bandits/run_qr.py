@@ -420,9 +420,19 @@ class QR(TDMAB):
                 + 0.0001
             )
 
-            softmax_values = logits / np.sum(logits)
+            if any(logits == 0):
+                action = np.argmax(values)
+            elif any(np.isnan(logits)):
+                action = np.argmax(values)
+            else:
+                softmax_values = logits / np.sum(logits)
 
-            action = np.random.choice(range(self._num_arms), p=softmax_values)
+                if any(np.isnan(softmax_values)):
+                    import pdb
+
+                    pdb.set_trace()
+
+                action = np.random.choice(range(self._num_arms), p=softmax_values)
 
         return action
 

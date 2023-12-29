@@ -381,12 +381,12 @@ class QR(TDMAB):
                 )
             elif self._adapt_temp["type"] == "min_epistemic":
                 factor = self._adapt_temp.get("factor", 1)
-                self._temperature = factor * np.min(
+                self._temperature = factor / np.min(
                     [self.epistemic_uncertainty(arm) for arm in range(self._num_arms)]
                 )
             elif self._adapt_temp["type"] == "max_epistemic":
                 factor = self._adapt_temp.get("factor", 1)
-                self._temperature = factor * np.max(
+                self._temperature = factor / np.max(
                     [self.epistemic_uncertainty(arm) for arm in range(self._num_arms)]
                 )
             elif self._adapt_temp["type"] == "epistemic":
@@ -402,7 +402,7 @@ class QR(TDMAB):
                 aleatoric = np.mean(
                     [self._q_distr[a].var() for a in range(self._num_arms)]
                 )
-                self._temperature = factor * epistemic / (epistemic + aleatoric)
+                self._temperature = factor / (epistemic / (epistemic + aleatoric))
             elif self._adapt_temp["type"] == "epistemic_per_arm_bonus":
                 factor = self._adapt_temp.get("factor", 1)
                 bonus_values = np.zeros(self._num_arms)
@@ -1231,16 +1231,50 @@ if __name__ == "__main__":
         #     )
         #     for _ in range(NUM_SEEDS)
         # ]
-        for factor_2 in [0.1, 0.5, 1, 5, 10, 25, 50, 100]:
-            agents[f"qr_adapt_lr_{factor_1}_temp_{factor_2}_oracle"] = [
+        for factor_2 in [0.1, 0.5, 1, 5]:
+            # agents[f"qr_adapt_lr_{factor_1}_temp_{factor_2}_oracle"] = [
+            #     QR(
+            #         num_arms=NUM_ARMS,
+            #         rho=1.0,
+            #         gamma=1,
+            #         ucb=False,
+            #         n_quantiles=N_QUANTILES,
+            #         adapt_lr={"type": "oracle_epistemic_ratio", "factor": factor_1},
+            #         adapt_temp={"type": "oracle_epistemic", "factor": factor_2},
+            #         learning_rate=None,
+            #         temperature=None,
+            #         init_range=(-1, 1),
+            #         true_dists=dists[d],
+            #         scalar_log_spec=[],
+            #     )
+            #     for d in range(NUM_SEEDS)
+            # ]
+            # agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}"] = [
+            #     QR(
+            #         num_arms=NUM_ARMS,
+            #         rho=1.0,
+            #         gamma=1,
+            #         ucb=False,
+            #         n_quantiles=N_QUANTILES,
+            #         adapt_lr={"type": "oracle_epistemic_ratio_2", "factor": factor_1},
+            #         adapt_temp={"type": "epistemic", "factor": factor_2},
+            #         learning_rate=None,
+            #         temperature=None,
+            #         init_range=(-1, 1),
+            #         true_dists=dists[d],
+            #         scalar_log_spec=[],
+            #     )
+            #     for d in range(NUM_SEEDS)
+            # ]
+            agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}"] = [
                 QR(
                     num_arms=NUM_ARMS,
                     rho=1.0,
                     gamma=1,
                     ucb=False,
                     n_quantiles=N_QUANTILES,
-                    adapt_lr={"type": "oracle_epistemic_ratio", "factor": factor_1},
-                    adapt_temp={"type": "oracle_epistemic", "factor": factor_2},
+                    adapt_lr={"type": "ratio_2", "factor": factor_1},
+                    adapt_temp={"type": "epistemic", "factor": factor_2},
                     learning_rate=None,
                     temperature=None,
                     init_range=(-1, 1),
@@ -1249,14 +1283,14 @@ if __name__ == "__main__":
                 )
                 for d in range(NUM_SEEDS)
             ]
-            agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}"] = [
+            agents[f"qr_adapt_lr_{factor_1}_temp_{factor_2}"] = [
                 QR(
                     num_arms=NUM_ARMS,
                     rho=1.0,
                     gamma=1,
                     ucb=False,
                     n_quantiles=N_QUANTILES,
-                    adapt_lr={"type": "epistemic_ratio_2", "factor": factor_1},
+                    adapt_lr={"type": "ratio", "factor": factor_1},
                     adapt_temp={"type": "epistemic", "factor": factor_2},
                     learning_rate=None,
                     temperature=None,

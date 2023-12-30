@@ -1185,8 +1185,25 @@ if __name__ == "__main__":
             gamma=1,
             ucb=False,
             n_quantiles=N_QUANTILES,
-            adapt_lr={"type": "oracle_epistemic_ratio", "factor": factor_1},
-            adapt_temp={"type": "oracle_epistemic", "factor": factor_2},
+            adapt_lr={"type": "oracle_epistemic_ratio", "factor": 1},
+            adapt_temp={"type": "oracle_epistemic", "factor": 0.5},
+            learning_rate=None,
+            temperature=None,
+            init_range=(-1, 1),
+            true_dists=dists[d],
+            scalar_log_spec=[],
+        )
+        for d in range(NUM_SEEDS)
+    ]
+    agents["oracle_2"] = [
+        QR(
+            num_arms=NUM_ARMS,
+            rho=1.0,
+            gamma=1,
+            ucb=False,
+            n_quantiles=N_QUANTILES,
+            adapt_lr={"type": "oracle_epistemic_ratio_2", "factor": 1},
+            adapt_temp={"type": "oracle_epistemic", "factor": 1},
             learning_rate=None,
             temperature=None,
             init_range=(-1, 1),

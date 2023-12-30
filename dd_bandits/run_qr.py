@@ -1161,6 +1161,39 @@ if __name__ == "__main__":
     )
 
     agents = {}
+    agents[f"baseline"] = [
+        QR(
+            num_arms=NUM_ARMS,
+            rho=1.0,
+            gamma=1.0,
+            ucb=False,
+            n_quantiles=N_QUANTILES,
+            adapt_lr=None,
+            adapt_temp=None,
+            learning_rate=0.25,
+            temperature=5,
+            init_range=(-1, 1),
+            scalar_log_spec=[],
+        )
+        for _ in range(NUM_SEEDS)
+    ]
+    agents["oracle"] = [
+        QR(
+            num_arms=NUM_ARMS,
+            rho=1.0,
+            gamma=1,
+            ucb=False,
+            n_quantiles=N_QUANTILES,
+            adapt_lr={"type": "oracle_epistemic_ratio", "factor": factor_1},
+            adapt_temp={"type": "oracle_epistemic", "factor": factor_2},
+            learning_rate=None,
+            temperature=None,
+            init_range=(-1, 1),
+            true_dists=dists[d],
+            scalar_log_spec=[],
+        )
+        for d in range(NUM_SEEDS)
+    ]
     # for lr in [0.5, 0.25, 0.1, 0.01, 0.001]:
     #     for gamma in [0.99, 0.999, 0.9999]:
     #         agents[f"ducb_{lr}_{gamma}"] = [

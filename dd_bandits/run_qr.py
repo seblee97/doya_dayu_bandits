@@ -1173,9 +1173,10 @@ if __name__ == "__main__":
             learning_rate=0.25,
             temperature=5,
             init_range=(-1, 1),
+            true_dists=dists[d],
             scalar_log_spec=[],
         )
-        for _ in range(NUM_SEEDS)
+        for d in range(NUM_SEEDS)
     ]
     agents["oracle"] = [
         QR(

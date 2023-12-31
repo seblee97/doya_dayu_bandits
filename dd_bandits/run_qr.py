@@ -500,7 +500,7 @@ class QR(TDMAB):
 
         if self._adapt_lr is None:
             ineq_lr = self._learning_rate
-        if self._adapt_lr.get("ineq_lr") is None:
+        elif self._adapt_lr.get("ineq_lr") is None:
             ineq_lr = self._learning_rate
         elif self._adapt_lr.get("ineq_lr") == "oracle_epistemic_ratio":
             factor = self._adapt_lr.get("ieq_factor", 1)

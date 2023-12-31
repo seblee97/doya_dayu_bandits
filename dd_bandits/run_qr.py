@@ -497,9 +497,24 @@ class QR(TDMAB):
         )[:, None]
 
         reward = torch.tensor(reward, dtype=self.dtype, requires_grad=False)[None, None]
-        loss = self._ineq_estimator[arm].update(
-            reward, quantiles, lr=self._learning_rate
-        )
+
+        if self._adapt_lr.get("ineq_lr") is None:
+            ineq_lr = self._learning_rate
+        elif self._adapt_lr.get("ineq_lr") == "oracle_epistemic_ratio":
+            factor = self._adapt_lr.get("ieq_factor", 1)
+            ineq_lr = factor * oracle_epistemic / (oracle_epistemic + oracle_aleatoric)
+        elif self._adapt_lr.get("ineq_lr") == "oracle_epistemic_ratio_2":
+            factor = self._adapt_lr.get("ieq_factor", 1)
+            ineq_lr = (
+                factor * oracle_epistemic**2 / (oracle_epistemic + oracle_aleatoric)
+            )
+        elif self._adapt_lr.get("ineq_lr") == "ratio":
+            factor = self._adapt_lr.get("ieq_factor", 1)
+            ineq_lr = factor * epistemic / (epistemic + aleatoric)
+        elif self._adapt_lr.get("ineq_lr") == "ratio_2":
+            factor = self._adapt_lr.get("ieq_factor", 1)
+            ineq_lr = factor * epistemic**2 / (epistemic + aleatoric)
+        loss = self._ineq_estimator[arm].update(reward, quantiles, lr=ineq_lr)
 
         return (
             epistemic,
@@ -1324,7 +1339,11 @@ if __name__ == "__main__":
                     gamma=1,
                     ucb=False,
                     n_quantiles=N_QUANTILES,
-                    adapt_lr={"type": "ratio_2", "factor": factor_1},
+                    adapt_lr={
+                        "type": "ratio_2",
+                        "factor": factor_1,
+                        "ineq_lr": "oracle_epistemic_ratio",
+                    },
                     adapt_temp={"type": "epistemic", "factor": factor_2},
                     learning_rate=None,
                     temperature=None,

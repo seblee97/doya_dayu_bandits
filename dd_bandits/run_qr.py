@@ -498,6 +498,8 @@ class QR(TDMAB):
 
         reward = torch.tensor(reward, dtype=self.dtype, requires_grad=False)[None, None]
 
+        if self._adapt_lr is None:
+            ineq_lr = self._learning_rate
         if self._adapt_lr.get("ineq_lr") is None:
             ineq_lr = self._learning_rate
         elif self._adapt_lr.get("ineq_lr") == "oracle_epistemic_ratio":

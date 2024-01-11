@@ -458,12 +458,12 @@ class QR(TDMAB):
         self._step_arm[arm] += 1
 
         epistemic = self.epistemic_uncertainty(arm)
-        aleatoric = self._q_distr[arm].var()
+        aleatoric = np.sqrt(self._q_distr[arm].var())
 
         oracle_epistemic = (
             self._q_distr[arm].mean() - self._true_dists[ep][arm].mean()
         ) ** 2
-        oracle_aleatoric = self._true_dists[ep][arm].var()
+        oracle_aleatoric = np.sqrt(self._true_dists[ep][arm].var())
 
         all_epistemics = [self.epistemic_uncertainty(a) for a in range(self._num_arms)]
         min_epistemics = np.min(all_epistemics)
@@ -500,6 +500,8 @@ class QR(TDMAB):
 
         if self._adapt_lr is None:
             ineq_lr = self._learning_rate
+        elif isinstance(self._adapt_lr.get("ineq_lr"), float):
+            ineq_lr = self._adapt_lr.get("ineq_lr")
         elif self._adapt_lr.get("ineq_lr") is None:
             ineq_lr = self._learning_rate
         elif self._adapt_lr.get("ineq_lr") == "oracle_epistemic_ratio":

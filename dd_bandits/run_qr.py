@@ -490,6 +490,30 @@ class QR(TDMAB):
         elif self._adapt_lr["type"] == "ratio_2":
             factor = self._adapt_lr.get("factor", 1)
             self._learning_rate = factor * epistemic**2 / (epistemic + aleatoric)
+        elif self._adapt_lr["type"] == "aleatoric_oracle_2":
+            factor = self._adapt_lr.get("factor", 1)
+            self._learning_rate = (
+                factor * epistemic**2 / (epistemic + oracle_aleatoric)
+            )
+        elif self._adapt_lr["type"] == "aleatoric_oracle":
+            factor = self._adapt_lr.get("factor", 1)
+            self._learning_rate = factor * epistemic / (epistemic + oracle_aleatoric)
+        elif self._adapt_lr["type"] == "epistemic_oracle_2":
+            factor = self._adapt_lr.get("factor", 1)
+            self._learning_rate = (
+                factor * oracle_epistemic**2 / (oracle_epistemic + aleatoric)
+            )
+        elif self._adapt_lr["type"] == "epistemic_oracle":
+            factor = self._adapt_lr.get("factor", 1)
+            self._learning_rate = (
+                factor * oracle_epistemic / (oracle_epistemic + aleatoric)
+            )
+        elif self._adapt_lr["type"] == "e_over_a":
+            factor = self._adapt_lr.get("factor", 1)
+            self._learning_rate = factor * epistemic / aleatoric
+        elif self._adapt_lr["type"] == "oracle_e_over_a":
+            factor = self._adapt_lr.get("factor", 1)
+            self._learning_rate = factor * oracle_epistemic / oracle_aleatoric
 
         self._q_distr[arm].update(reward, lr=self._learning_rate)
         quantiles = torch.tensor(
@@ -780,173 +804,173 @@ class PrioritizedReplayQL(LinearQL):
         return np.array(td_errors)
 
 
-class DistributionalAgent(PrioritizedReplayQL):
-    def __init__(
-        self,
-        discount_factor,
-        learning_rate,
-        n_states,
-        n_actions,
-        verbose=False,
-        clip_error=True,
-        init_range=(-1, 1),
-        n_quantiles=21,
-        priority_variable="td_error",
-    ):
-        super().__init__(
-            discount_factor=discount_factor,
-            learning_rate=learning_rate,
-            n_states=n_states,
-            n_actions=n_actions,
-            verbose=verbose,
-            clip_error=clip_error,
-        )
+# class DistributionalAgent(PrioritizedReplayQL):
+#     def __init__(
+#         self,
+#         discount_factor,
+#         learning_rate,
+#         n_states,
+#         n_actions,
+#         verbose=False,
+#         clip_error=True,
+#         init_range=(-1, 1),
+#         n_quantiles=21,
+#         priority_variable="td_error",
+#     ):
+#         super().__init__(
+#             discount_factor=discount_factor,
+#             learning_rate=learning_rate,
+#             n_states=n_states,
+#             n_actions=n_actions,
+#             verbose=verbose,
+#             clip_error=clip_error,
+#         )
 
-        self.init_range = init_range
-        self.n_quantiles = n_quantiles
-        self.priority_variable = priority_variable
-        self.var_params = 0.1 * torch.ones(
-            size=self.parameters.shape,
-            requires_grad=False,
-            device=self.device,
-            dtype=self.dtype,
-        )
-        self._init_quantiles()
-        self.ineq_estimator = {}
-        for s in range(n_states):
-            for a in range(n_actions):
-                self.ineq_estimator[(s, a)] = InequalityEstimator(
-                    n_quantiles=self.n_quantiles,
-                    learning_rate=self.lr,
-                    device=self.device,
-                )
+#         self.init_range = init_range
+#         self.n_quantiles = n_quantiles
+#         self.priority_variable = priority_variable
+#         self.var_params = 0.1 * torch.ones(
+#             size=self.parameters.shape,
+#             requires_grad=False,
+#             device=self.device,
+#             dtype=self.dtype,
+#         )
+#         self._init_quantiles()
+#         self.ineq_estimator = {}
+#         for s in range(n_states):
+#             for a in range(n_actions):
+#                 self.ineq_estimator[(s, a)] = InequalityEstimator(
+#                     n_quantiles=self.n_quantiles,
+#                     learning_rate=self.lr,
+#                     device=self.device,
+#                 )
 
-    def _init_quantiles(self):
-        self.q_distr = {}
-        for s in range(self.n_states):
-            for a in range(self.n_actions):
-                self.q_distr[(s, a)] = QRTD(
-                    n_quantiles=self.n_quantiles,
-                    learning_rate=self.lr,
-                    init_range=self.init_range,
-                )
-                self.parameters[s, a] = self.q_distr[(s, a)].mean()
-        self.taus = np.linspace(0, 1, num=self.n_quantiles + 1, endpoint=True)
-        self.tau_hat = np.linspace(
-            np.diff(self.taus)[0] / 2,
-            1 - np.diff(self.taus)[0] / 2,
-            num=self.n_quantiles,
-        )
+#     def _init_quantiles(self):
+#         self.q_distr = {}
+#         for s in range(self.n_states):
+#             for a in range(self.n_actions):
+#                 self.q_distr[(s, a)] = QRTD(
+#                     n_quantiles=self.n_quantiles,
+#                     learning_rate=self.lr,
+#                     init_range=self.init_range,
+#                 )
+#                 self.parameters[s, a] = self.q_distr[(s, a)].mean()
+#         self.taus = np.linspace(0, 1, num=self.n_quantiles + 1, endpoint=True)
+#         self.tau_hat = np.linspace(
+#             np.diff(self.taus)[0] / 2,
+#             1 - np.diff(self.taus)[0] / 2,
+#             num=self.n_quantiles,
+#         )
 
-    def update(self, transitions, importance_weights=None, lr=None, var_lr=None):
-        if lr is None:
-            lr = self.lr
-        if importance_weights is None:
-            importance_weights = np.ones(len(transitions))
-        importance_weights = torch.tensor(
-            importance_weights, dtype=self.dtype, device=self.device
-        )
-        td_errors = []
-        updates = []
-        for i, transition in enumerate(transitions):
-            td_error = self.compute_td_error(transition)
-            td_errors.append(td_error.detach().cpu().numpy())
-            update = (
-                td_error  # *self.parameters[np.argmax(prev_state), transition.action]
-            )
-            updates.append(update)
-            self.q_distr[(np.argmax(transition.prev_state), transition.action)].lr = lr
-            self.q_distr[(np.argmax(transition.prev_state), transition.action)].update(
-                transition.reward,
-            )
-            h = self.q_distr[(np.argmax(transition.prev_state), transition.action)]
-            self.parameters[
-                np.argmax(transition.prev_state), transition.action
-            ] = h.mean()
-            self.var_params[
-                np.argmax(transition.prev_state), transition.action
-            ] = h.var()
-        if self.priority_variable == "td_error":
-            return np.array(td_errors)
-        else:
-            # warnings.warn("Unknown priority variable, returning td_error")
-            return np.array(td_errors)
+#     def update(self, transitions, importance_weights=None, lr=None, var_lr=None):
+#         if lr is None:
+#             lr = self.lr
+#         if importance_weights is None:
+#             importance_weights = np.ones(len(transitions))
+#         importance_weights = torch.tensor(
+#             importance_weights, dtype=self.dtype, device=self.device
+#         )
+#         td_errors = []
+#         updates = []
+#         for i, transition in enumerate(transitions):
+#             td_error = self.compute_td_error(transition)
+#             td_errors.append(td_error.detach().cpu().numpy())
+#             update = (
+#                 td_error  # *self.parameters[np.argmax(prev_state), transition.action]
+#             )
+#             updates.append(update)
+#             self.q_distr[(np.argmax(transition.prev_state), transition.action)].lr = lr
+#             self.q_distr[(np.argmax(transition.prev_state), transition.action)].update(
+#                 transition.reward,
+#             )
+#             h = self.q_distr[(np.argmax(transition.prev_state), transition.action)]
+#             self.parameters[
+#                 np.argmax(transition.prev_state), transition.action
+#             ] = h.mean()
+#             self.var_params[
+#                 np.argmax(transition.prev_state), transition.action
+#             ] = h.var()
+#         if self.priority_variable == "td_error":
+#             return np.array(td_errors)
+#         else:
+#             # warnings.warn("Unknown priority variable, returning td_error")
+#             return np.array(td_errors)
 
-    def get_quantile_gradient(self, transitions):
-        gradients = []
-        for i, transition in enumerate(transitions):
-            reward = torch.tensor(
-                transition.reward,
-                dtype=self.dtype,
-                device=self.device,
-                requires_grad=False,
-            )[None, None]
-            ineq_estimator = self.ineq_estimator[
-                (np.argmax(transition.prev_state), transition.action)
-            ]
-            Fv = ineq_estimator.forward(reward)
-            torch_tau_hat = torch.tensor(
-                self.tau_hat, dtype=self.dtype, device=self.device, requires_grad=False
-            )
-            grad_norm = torch.sqrt(torch.mean((torch_tau_hat - Fv) ** 2))
-            gradients.append(grad_norm.detach().cpu().numpy())
-        return np.array(gradients)
+#     def get_quantile_gradient(self, transitions):
+#         gradients = []
+#         for i, transition in enumerate(transitions):
+#             reward = torch.tensor(
+#                 transition.reward,
+#                 dtype=self.dtype,
+#                 device=self.device,
+#                 requires_grad=False,
+#             )[None, None]
+#             ineq_estimator = self.ineq_estimator[
+#                 (np.argmax(transition.prev_state), transition.action)
+#             ]
+#             Fv = ineq_estimator.forward(reward)
+#             torch_tau_hat = torch.tensor(
+#                 self.tau_hat, dtype=self.dtype, device=self.device, requires_grad=False
+#             )
+#             grad_norm = torch.sqrt(torch.mean((torch_tau_hat - Fv) ** 2))
+#             gradients.append(grad_norm.detach().cpu().numpy())
+#         return np.array(gradients)
 
-    def update_ineq_estimator(self, transitions, lr=None):
-        if lr is None:
-            lr = self.lr
-        losses = []
-        for i, transition in enumerate(transitions):
-            quantiles = torch.tensor(
-                self.get_quantiles(state=0, action=transition.action),
-                dtype=self.dtype,
-                device=self.device,
-                requires_grad=False,
-            )[:, None]
-            reward = torch.tensor(
-                transition.reward,
-                dtype=self.dtype,
-                device=self.device,
-                requires_grad=False,
-            )[None, None]
-            loss = self.ineq_estimator[
-                (np.argmax(transition.prev_state), transition.action)
-            ].update(reward, quantiles, lr=lr)
-            losses.append(loss)
-        return np.array(losses)
+#     def update_ineq_estimator(self, transitions, lr=None):
+#         if lr is None:
+#             lr = self.lr
+#         losses = []
+#         for i, transition in enumerate(transitions):
+#             quantiles = torch.tensor(
+#                 self.get_quantiles(state=0, action=transition.action),
+#                 dtype=self.dtype,
+#                 device=self.device,
+#                 requires_grad=False,
+#             )[:, None]
+#             reward = torch.tensor(
+#                 transition.reward,
+#                 dtype=self.dtype,
+#                 device=self.device,
+#                 requires_grad=False,
+#             )[None, None]
+#             loss = self.ineq_estimator[
+#                 (np.argmax(transition.prev_state), transition.action)
+#             ].update(reward, quantiles, lr=lr)
+#             losses.append(loss)
+#         return np.array(losses)
 
-    def get_quantiles(self, state, action):
-        return self.q_distr[(state, action)].thetas
+#     def get_quantiles(self, state, action):
+#         return self.q_distr[(state, action)].thetas
 
-    def quantile_regression_loss(self, state, action, target):
-        all_quantiles = self.get_quantiles(state, action)
-        u = target - all_quantiles
-        scaling = np.abs(self.tau_hat[np.newaxis, :] - (u < 0))
-        loss = scaling * huber(1, u)
-        return loss
+#     def quantile_regression_loss(self, state, action, target):
+#         all_quantiles = self.get_quantiles(state, action)
+#         u = target - all_quantiles
+#         scaling = np.abs(self.tau_hat[np.newaxis, :] - (u < 0))
+#         loss = scaling * huber(1, u)
+#         return loss
 
-    def get_quantile_loss(self, transitions):
-        losses = []
-        for i, transition in enumerate(transitions):
-            loss = self.quantile_regression_loss(
-                np.argmax(transition.prev_state), transition.action, transition.reward
-            )
-            losses.append(np.mean(loss))
-        return np.array(losses)
+#     def get_quantile_loss(self, transitions):
+#         losses = []
+#         for i, transition in enumerate(transitions):
+#             loss = self.quantile_regression_loss(
+#                 np.argmax(transition.prev_state), transition.action, transition.reward
+#             )
+#             losses.append(np.mean(loss))
+#         return np.array(losses)
 
-    def get_all_quantiles(self):
-        state = 0
-        return np.stack(
-            [self.get_quantiles(state, action) for action in range(self.n_actions)],
-            axis=-1,
-        )
+#     def get_all_quantiles(self):
+#         state = 0
+#         return np.stack(
+#             [self.get_quantiles(state, action) for action in range(self.n_actions)],
+#             axis=-1,
+#         )
 
-    def get_pdfs(self):
-        state = 0
-        return np.stack(
-            [self.q_distr[(state, action)].pdf() for action in range(self.n_actions)],
-            axis=-1,
-        )
+#     def get_pdfs(self):
+#         state = 0
+#         return np.stack(
+#             [self.q_distr[(state, action)].pdf() for action in range(self.n_actions)],
+#             axis=-1,
+#         )
 
 
 def _setup_data_log(agents, num_episodes, change_frequency, bernoulli, num_arms):
@@ -1180,6 +1204,17 @@ if __name__ == "__main__":
     )
 
     agents = {}
+    # agents[f"td_baseline"] = [
+    #     DUCB(
+    #         num_arms=NUM_ARMS,
+    #         rho=1.0,
+    #         gamma=1.0,
+    #         learning_rate=0.25,
+    #         init_range=(-1, 1),
+    #         scalar_log_spec=[],
+    #     )
+    #     for d in range(NUM_SEEDS)
+    # ]
     agents[f"baseline"] = [
         QR(
             num_arms=NUM_ARMS,
@@ -1268,7 +1303,7 @@ if __name__ == "__main__":
     #             for _ in range(NUM_SEEDS)
     #         ]
 
-    for factor_1 in [0.01]:
+    for factor_1 in [0.1, 1, 5, 10]:
         # agents[f"qr_adapt_lr_{factor_1}"] = [
         #     QR(
         #         num_arms=NUM_ARMS,
@@ -1302,52 +1337,14 @@ if __name__ == "__main__":
         #     for _ in range(NUM_SEEDS)
         # ]
         for factor_2 in [0.1, 0.5, 1, 5]:
-            # agents[f"qr_adapt_lr_{factor_1}_temp_{factor_2}_oracle"] = [
-            #     QR(
-            #         num_arms=NUM_ARMS,
-            #         rho=1.0,
-            #         gamma=1,
-            #         ucb=False,
-            #         n_quantiles=N_QUANTILES,
-            #         adapt_lr={"type": "oracle_epistemic_ratio", "factor": factor_1},
-            #         adapt_temp={"type": "oracle_epistemic", "factor": factor_2},
-            #         learning_rate=None,
-            #         temperature=None,
-            #         init_range=(-1, 1),
-            #         true_dists=dists[d],
-            #         scalar_log_spec=[],
-            #     )
-            #     for d in range(NUM_SEEDS)
-            # ]
-            # agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}"] = [
-            #     QR(
-            #         num_arms=NUM_ARMS,
-            #         rho=1.0,
-            #         gamma=1,
-            #         ucb=False,
-            #         n_quantiles=N_QUANTILES,
-            #         adapt_lr={"type": "oracle_epistemic_ratio_2", "factor": factor_1},
-            #         adapt_temp={"type": "epistemic", "factor": factor_2},
-            #         learning_rate=None,
-            #         temperature=None,
-            #         init_range=(-1, 1),
-            #         true_dists=dists[d],
-            #         scalar_log_spec=[],
-            #     )
-            #     for d in range(NUM_SEEDS)
-            # ]
-            agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}"] = [
+            agents[f"qr_adapt_lr_{factor_1}_temp_{factor_2}_aleatoric_oracle"] = [
                 QR(
                     num_arms=NUM_ARMS,
                     rho=1.0,
                     gamma=1,
                     ucb=False,
                     n_quantiles=N_QUANTILES,
-                    adapt_lr={
-                        "type": "ratio_2",
-                        "factor": factor_1,
-                        "ineq_lr": "oracle_epistemic_ratio",
-                    },
+                    adapt_lr={"type": "aleatoric_oracle", "factor": factor_1},
                     adapt_temp={"type": "epistemic", "factor": factor_2},
                     learning_rate=None,
                     temperature=None,
@@ -1357,54 +1354,215 @@ if __name__ == "__main__":
                 )
                 for d in range(NUM_SEEDS)
             ]
-            # agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}_min"] = [
-            #     QR(
-            #         num_arms=NUM_ARMS,
-            #         rho=1.0,
-            #         gamma=1,
-            #         ucb=False,
-            #         n_quantiles=N_QUANTILES,
-            #         adapt_lr={"type": "ratio_2", "factor": factor_1},
-            #         adapt_temp={"type": "min_epistemic", "factor": factor_2},
-            #         learning_rate=None,
-            #         temperature=None,
-            #         init_range=(-1, 1),
-            #         scalar_log_spec=[],
-            #     )
-            #     for _ in range(NUM_SEEDS)
-            # ]
-            # agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}_max"] = [
-            #     QR(
-            #         num_arms=NUM_ARMS,
-            #         rho=1.0,
-            #         gamma=1,
-            #         ucb=False,
-            #         n_quantiles=N_QUANTILES,
-            #         adapt_lr={"type": "ratio_2", "factor": factor_1},
-            #         adapt_temp={"type": "max_epistemic", "factor": factor_2},
-            #         learning_rate=None,
-            #         temperature=None,
-            #         init_range=(-1, 1),
-            #         scalar_log_spec=[],
-            #     )
-            #     for _ in range(NUM_SEEDS)
-            # ]
-            # agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}_ucb"] = [
-            #     QR(
-            #         num_arms=NUM_ARMS,
-            #         rho=1.0,
-            #         gamma=1,
-            #         ucb=False,
-            #         n_quantiles=N_QUANTILES,
-            #         adapt_lr={"type": "ratio_2", "factor": factor_1},
-            #         adapt_temp={"type": "epistemic_per_arm_bonus", "factor": factor_2},
-            #         learning_rate=None,
-            #         temperature=None,
-            #         init_range=(-1, 1),
-            #         scalar_log_spec=[],
-            #     )
-            #     for _ in range(NUM_SEEDS)
-            # ]
+            agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}_aleatoric_oracle"] = [
+                QR(
+                    num_arms=NUM_ARMS,
+                    rho=1.0,
+                    gamma=1,
+                    ucb=False,
+                    n_quantiles=N_QUANTILES,
+                    adapt_lr={"type": "aleatoric_oracle_2", "factor": factor_1},
+                    adapt_temp={"type": "epistemic", "factor": factor_2},
+                    learning_rate=None,
+                    temperature=None,
+                    init_range=(-1, 1),
+                    true_dists=dists[d],
+                    scalar_log_spec=[],
+                )
+                for d in range(NUM_SEEDS)
+            ]
+            agents[f"qr_adapt_lr_{factor_1}_temp_{factor_2}_aleatoric_temp_oracle"] = [
+                QR(
+                    num_arms=NUM_ARMS,
+                    rho=1.0,
+                    gamma=1,
+                    ucb=False,
+                    n_quantiles=N_QUANTILES,
+                    adapt_lr={"type": "aleatoric_oracle", "factor": factor_1},
+                    adapt_temp={"type": "oracle_epistemic", "factor": factor_2},
+                    learning_rate=None,
+                    temperature=None,
+                    init_range=(-1, 1),
+                    true_dists=dists[d],
+                    scalar_log_spec=[],
+                )
+                for d in range(NUM_SEEDS)
+            ]
+            agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}_aleatoric_temp_oracle"] = [
+                QR(
+                    num_arms=NUM_ARMS,
+                    rho=1.0,
+                    gamma=1,
+                    ucb=False,
+                    n_quantiles=N_QUANTILES,
+                    adapt_lr={"type": "aleatoric_oracle_2", "factor": factor_1},
+                    adapt_temp={"type": "oracle_epistemic", "factor": factor_2},
+                    learning_rate=None,
+                    temperature=None,
+                    init_range=(-1, 1),
+                    true_dists=dists[d],
+                    scalar_log_spec=[],
+                )
+                for d in range(NUM_SEEDS)
+            ]
+            agents[f"qr_adapt_lr_{factor_1}_temp_{factor_2}_temp_oracle"] = [
+                QR(
+                    num_arms=NUM_ARMS,
+                    rho=1.0,
+                    gamma=1,
+                    ucb=False,
+                    n_quantiles=N_QUANTILES,
+                    adapt_lr={"type": "ratio", "factor": factor_1},
+                    adapt_temp={"type": "oracle_epistemic", "factor": factor_2},
+                    learning_rate=None,
+                    temperature=None,
+                    init_range=(-1, 1),
+                    true_dists=dists[d],
+                    scalar_log_spec=[],
+                )
+                for d in range(NUM_SEEDS)
+            ]
+            agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}_temp_oracle"] = [
+                QR(
+                    num_arms=NUM_ARMS,
+                    rho=1.0,
+                    gamma=1,
+                    ucb=False,
+                    n_quantiles=N_QUANTILES,
+                    adapt_lr={"type": "ratio_2", "factor": factor_1},
+                    adapt_temp={"type": "oracle_epistemic", "factor": factor_2},
+                    learning_rate=None,
+                    temperature=None,
+                    init_range=(-1, 1),
+                    true_dists=dists[d],
+                    scalar_log_spec=[],
+                )
+                for d in range(NUM_SEEDS)
+            ]
+
+    for factor_1 in [1, 5, 10]:
+        for factor_2 in [0.5, 1, 5]:
+            agents[f"qr_adapt_lr_{factor_1}_temp_{factor_2}"] = [
+                QR(
+                    num_arms=NUM_ARMS,
+                    rho=1.0,
+                    gamma=1,
+                    ucb=False,
+                    n_quantiles=N_QUANTILES,
+                    adapt_lr={"type": "ratio", "factor": factor_1},
+                    adapt_temp={"type": "epistemic", "factor": factor_2},
+                    learning_rate=None,
+                    temperature=None,
+                    init_range=(-1, 1),
+                    true_dists=dists[d],
+                    scalar_log_spec=[],
+                )
+                for d in range(NUM_SEEDS)
+            ]
+            agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}"] = [
+                QR(
+                    num_arms=NUM_ARMS,
+                    rho=1.0,
+                    gamma=1,
+                    ucb=False,
+                    n_quantiles=N_QUANTILES,
+                    adapt_lr={"type": "ratio_2", "factor": factor_1},
+                    adapt_temp={"type": "epistemic", "factor": factor_2},
+                    learning_rate=None,
+                    temperature=None,
+                    init_range=(-1, 1),
+                    true_dists=dists[d],
+                    scalar_log_spec=[],
+                )
+                for d in range(NUM_SEEDS)
+            ]
+    # agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}"] = [
+    #     QR(
+    #         num_arms=NUM_ARMS,
+    #         rho=1.0,
+    #         gamma=1,
+    #         ucb=False,
+    #         n_quantiles=N_QUANTILES,
+    #         adapt_lr={"type": "oracle_epistemic_ratio_2", "factor": factor_1},
+    #         adapt_temp={"type": "epistemic", "factor": factor_2},
+    #         learning_rate=None,
+    #         temperature=None,
+    #         init_range=(-1, 1),
+    #         true_dists=dists[d],
+    #         scalar_log_spec=[],
+    #     )
+    #     for d in range(NUM_SEEDS)
+    # ]
+    # pass
+    # agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}"] = [
+    #     QR(
+    #         num_arms=NUM_ARMS,
+    #         rho=1.0,
+    #         gamma=1,
+    #         ucb=False,
+    #         n_quantiles=N_QUANTILES,
+    #         adapt_lr={
+    #             "type": "ratio_2",
+    #             "factor": factor_1,
+    #             "ineq_lr": "oracle_epistemic_ratio",
+    #         },
+    #         adapt_temp={"type": "epistemic", "factor": factor_2},
+    #         learning_rate=None,
+    #         temperature=None,
+    #         init_range=(-1, 1),
+    #         true_dists=dists[d],
+    #         scalar_log_spec=[],
+    #     )
+    #     for d in range(NUM_SEEDS)
+    # ]
+    # agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}_min"] = [
+    #     QR(
+    #         num_arms=NUM_ARMS,
+    #         rho=1.0,
+    #         gamma=1,
+    #         ucb=False,
+    #         n_quantiles=N_QUANTILES,
+    #         adapt_lr={"type": "ratio_2", "factor": factor_1},
+    #         adapt_temp={"type": "min_epistemic", "factor": factor_2},
+    #         learning_rate=None,
+    #         temperature=None,
+    #         init_range=(-1, 1),
+    #         scalar_log_spec=[],
+    #     )
+    #     for _ in range(NUM_SEEDS)
+    # ]
+    # agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}_max"] = [
+    #     QR(
+    #         num_arms=NUM_ARMS,
+    #         rho=1.0,
+    #         gamma=1,
+    #         ucb=False,
+    #         n_quantiles=N_QUANTILES,
+    #         adapt_lr={"type": "ratio_2", "factor": factor_1},
+    #         adapt_temp={"type": "max_epistemic", "factor": factor_2},
+    #         learning_rate=None,
+    #         temperature=None,
+    #         init_range=(-1, 1),
+    #         scalar_log_spec=[],
+    #     )
+    #     for _ in range(NUM_SEEDS)
+    # ]
+    # agents[f"qr_adapt_lr2_{factor_1}_temp_{factor_2}_ucb"] = [
+    #     QR(
+    #         num_arms=NUM_ARMS,
+    #         rho=1.0,
+    #         gamma=1,
+    #         ucb=False,
+    #         n_quantiles=N_QUANTILES,
+    #         adapt_lr={"type": "ratio_2", "factor": factor_1},
+    #         adapt_temp={"type": "epistemic_per_arm_bonus", "factor": factor_2},
+    #         learning_rate=None,
+    #         temperature=None,
+    #         init_range=(-1, 1),
+    #         scalar_log_spec=[],
+    #     )
+    #     for _ in range(NUM_SEEDS)
+    # ]
 
     # agents["qr_adapt_temp"] = [
     #     QR(
